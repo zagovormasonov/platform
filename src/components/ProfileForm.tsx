@@ -91,9 +91,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       })
 
       // Триггерим обновление данных в других компонентах
-      console.log('Триггерим обновление данных...')
       triggerRefresh()
-      console.log('Обновление данных триггернуто')
 
       // Закрываем форму через 1.5 секунды
       setTimeout(() => {

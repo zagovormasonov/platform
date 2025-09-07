@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Calendar, User, Eye } from 'lucide-react'
 import { Navigation } from './Navigation'
@@ -24,7 +24,6 @@ export function Feed() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    console.log('Feed: refreshTrigger изменился:', refreshTrigger)
     fetchPublishedArticles()
   }, [refreshTrigger])
 
@@ -53,10 +52,6 @@ export function Feed() {
         return
       }
 
-      console.log('Данные статей от Supabase:', data)
-      console.log('Первая статья:', data?.[0])
-      console.log('Профили первой статьи:', data?.[0]?.profiles)
-      
       // Приводим данные к правильному типу
       const typedData = data?.map(article => ({
         ...article,
@@ -83,26 +78,18 @@ export function Feed() {
   }
 
   const getAuthorName = (profiles: { full_name: string | null; email: string } | null) => {
-    console.log('getAuthorName получил:', profiles)
-    
     if (!profiles) {
-      console.log('Нет профиля, возвращаю "Неизвестный автор"')
       return 'Неизвестный автор'
     }
     
-    console.log('Профиль:', profiles)
-    
     if (profiles.full_name && profiles.full_name.trim()) {
-      console.log('Возвращаю полное имя:', profiles.full_name)
       return profiles.full_name
     }
     
     if (profiles.email) {
-      console.log('Возвращаю часть email:', profiles.email.split('@')[0])
       return profiles.email.split('@')[0]
     }
     
-    console.log('Ничего не найдено, возвращаю "Неизвестный автор"')
     return 'Неизвестный автор'
   }
 
