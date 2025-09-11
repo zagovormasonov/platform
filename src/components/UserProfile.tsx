@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, User, Mail, MapPin, Phone, Globe, MessageCircle, Star, Users, Calendar, Award } from 'lucide-react'
-import { Reviews } from './Reviews'
+import { ReviewsInline } from './ReviewsInline'
 
 interface UserProfileProps {
   userId: string
@@ -366,7 +366,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
             {/* Reviews (only for experts) */}
             {isExpert && (
               <div>
-                <Reviews expertId={profile.id} />
+                <ReviewsInline expertId={profile.id} />
               </div>
             )}
           </div>
