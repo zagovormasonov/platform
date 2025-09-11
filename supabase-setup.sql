@@ -7,6 +7,13 @@ CREATE TABLE profiles (
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
+  bio TEXT,
+  website_url TEXT,
+  github_url TEXT,
+  linkedin_url TEXT,
+  twitter_url TEXT,
+  instagram_url TEXT,
+  telegram_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -22,9 +29,21 @@ CREATE TABLE articles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Создание таблицы друзей
+CREATE TABLE friendships (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  friend_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending, accepted, blocked
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, friend_id)
+);
+
 -- Включение RLS (Row Level Security)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
 
 -- Политики для профилей
 CREATE POLICY "Users can view own profile" ON profiles
@@ -55,12 +74,25 @@ CREATE POLICY "Users can update own articles" ON articles
 CREATE POLICY "Users can delete own articles" ON articles
   FOR DELETE USING (auth.uid() = author_id);
 
+-- Политики для друзей
+CREATE POLICY "Users can view their own friendships" ON friendships
+  FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
+
+CREATE POLICY "Users can create friendship requests" ON friendships
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own friendships" ON friendships
+  FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = friend_id);
+
+CREATE POLICY "Users can delete their own friendships" ON friendships
+  FOR DELETE USING (auth.uid() = user_id OR auth.uid() = friend_id);
+
 -- Функция для автоматического создания профиля
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name)
-  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name');
+  INSERT INTO public.profiles (id, email, full_name, bio, website_url, github_url, linkedin_url, twitter_url, instagram_url, telegram_url)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'full_name', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

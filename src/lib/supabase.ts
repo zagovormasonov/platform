@@ -18,6 +18,13 @@ export type Database = {
           email: string
           full_name: string | null
           avatar_url: string | null
+          bio: string | null
+          website_url: string | null
+          github_url: string | null
+          linkedin_url: string | null
+          twitter_url: string | null
+          instagram_url: string | null
+          telegram_url: string | null
           created_at: string
           updated_at: string
         }
@@ -26,6 +33,13 @@ export type Database = {
           email: string
           full_name?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          website_url?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          twitter_url?: string | null
+          instagram_url?: string | null
+          telegram_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -34,6 +48,13 @@ export type Database = {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          website_url?: string | null
+          github_url?: string | null
+          linkedin_url?: string | null
+          twitter_url?: string | null
+          instagram_url?: string | null
+          telegram_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -63,6 +84,32 @@ export type Database = {
           content?: string
           author_id?: string
           published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      friendships: {
+        Row: {
+          id: string
+          user_id: string
+          friend_id: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          friend_id: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          friend_id?: string
+          status?: string
           created_at?: string
           updated_at?: string
         }

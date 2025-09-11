@@ -3,11 +3,13 @@ import { supabase } from '../lib/supabase'
 import { Calendar, User, Eye } from 'lucide-react'
 import { Navigation } from './Navigation'
 import { useRefresh } from '../contexts/RefreshContext'
+import { UserProfile } from './UserProfile'
 
 interface Article {
   id: string
   title: string
   content: string
+  author_id: string
   published: boolean
   created_at: string
   updated_at: string
@@ -22,6 +24,7 @@ export function Feed() {
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPublishedArticles()
@@ -35,6 +38,7 @@ export function Feed() {
           id,
           title,
           content,
+          author_id,
           published,
           created_at,
           updated_at,
@@ -93,6 +97,10 @@ export function Feed() {
     return 'Неизвестный автор'
   }
 
+  const handleAuthorClick = (authorId: string) => {
+    setSelectedUserId(authorId)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -124,6 +132,16 @@ export function Feed() {
     )
   }
 
+  // Если выбран пользователь, показываем его профиль
+  if (selectedUserId) {
+    return (
+      <UserProfile 
+        userId={selectedUserId} 
+        onBack={() => setSelectedUserId(null)} 
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -148,10 +166,13 @@ export function Feed() {
                     {article.title}
                   </h2>
                   <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                    <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => handleAuthorClick(article.author_id)}
+                      className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                    >
                       <User className="h-4 w-4" />
                       <span>{getAuthorName(article.profiles)}</span>
-                    </div>
+                    </button>
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />
                       <span>{formatDate(article.created_at)}</span>

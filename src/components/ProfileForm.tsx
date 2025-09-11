@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRefresh } from '../contexts/RefreshContext'
 import { supabase } from '../lib/supabase'
-import { X, Save, User, Mail } from 'lucide-react'
+import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle } from 'lucide-react'
 
 interface Profile {
   id: string
   email: string
   full_name: string | null
   avatar_url: string | null
+  bio: string | null
+  website_url: string | null
+  github_url: string | null
+  linkedin_url: string | null
+  twitter_url: string | null
+  instagram_url: string | null
+  telegram_url: string | null
   created_at: string
   updated_at: string
 }
@@ -22,6 +29,13 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   const { triggerRefresh } = useRefresh()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [fullName, setFullName] = useState('')
+  const [bio, setBio] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [githubUrl, setGithubUrl] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [twitterUrl, setTwitterUrl] = useState('')
+  const [instagramUrl, setInstagramUrl] = useState('')
+  const [telegramUrl, setTelegramUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -51,6 +65,13 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
 
       setProfile(data)
       setFullName(data.full_name || '')
+      setBio(data.bio || '')
+      setWebsiteUrl(data.website_url || '')
+      setGithubUrl(data.github_url || '')
+      setLinkedinUrl(data.linkedin_url || '')
+      setTwitterUrl(data.twitter_url || '')
+      setInstagramUrl(data.instagram_url || '')
+      setTelegramUrl(data.telegram_url || '')
     } catch (err) {
       console.error('Ошибка загрузки профиля:', err)
       setError('Произошла неожиданная ошибка')
@@ -72,6 +93,13 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
         .from('profiles')
         .update({
           full_name: fullName.trim() || null,
+          bio: bio.trim() || null,
+          website_url: websiteUrl.trim() || null,
+          github_url: githubUrl.trim() || null,
+          linkedin_url: linkedinUrl.trim() || null,
+          twitter_url: twitterUrl.trim() || null,
+          instagram_url: instagramUrl.trim() || null,
+          telegram_url: telegramUrl.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -87,6 +115,13 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       setProfile({
         ...profile,
         full_name: fullName.trim() || null,
+        bio: bio.trim() || null,
+        website_url: websiteUrl.trim() || null,
+        github_url: githubUrl.trim() || null,
+        linkedin_url: linkedinUrl.trim() || null,
+        twitter_url: twitterUrl.trim() || null,
+        instagram_url: instagramUrl.trim() || null,
+        telegram_url: telegramUrl.trim() || null,
         updated_at: new Date().toISOString(),
       })
 
@@ -174,6 +209,140 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
               <p className="mt-1 text-xs text-gray-500">
                 Это имя будет отображаться как автор ваших статей
               </p>
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
+                О себе
+              </label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="input-field pl-10 min-h-[100px] resize-y"
+                  placeholder="Расскажите о себе..."
+                  rows={4}
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Краткое описание о себе (необязательно)
+              </p>
+            </div>
+
+            {/* Social Links */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Ссылки на ресурсы</h3>
+              
+              {/* Website */}
+              <div>
+                <label htmlFor="websiteUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  Веб-сайт
+                </label>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="websiteUrl"
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://example.com"
+                  />
+                </div>
+              </div>
+
+              {/* GitHub */}
+              <div>
+                <label htmlFor="githubUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  GitHub
+                </label>
+                <div className="relative">
+                  <Github className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="githubUrl"
+                    type="url"
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://github.com/username"
+                  />
+                </div>
+              </div>
+
+              {/* LinkedIn */}
+              <div>
+                <label htmlFor="linkedinUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  LinkedIn
+                </label>
+                <div className="relative">
+                  <Linkedin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="linkedinUrl"
+                    type="url"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://linkedin.com/in/username"
+                  />
+                </div>
+              </div>
+
+              {/* Twitter */}
+              <div>
+                <label htmlFor="twitterUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  Twitter
+                </label>
+                <div className="relative">
+                  <Twitter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="twitterUrl"
+                    type="url"
+                    value={twitterUrl}
+                    onChange={(e) => setTwitterUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://twitter.com/username"
+                  />
+                </div>
+              </div>
+
+              {/* Instagram */}
+              <div>
+                <label htmlFor="instagramUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  Instagram
+                </label>
+                <div className="relative">
+                  <Instagram className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="instagramUrl"
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://instagram.com/username"
+                  />
+                </div>
+              </div>
+
+              {/* Telegram */}
+              <div>
+                <label htmlFor="telegramUrl" className="block text-sm font-medium text-gray-700 mb-2">
+                  Telegram
+                </label>
+                <div className="relative">
+                  <MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    id="telegramUrl"
+                    type="url"
+                    value={telegramUrl}
+                    onChange={(e) => setTelegramUrl(e.target.value)}
+                    className="input-field pl-10"
+                    placeholder="https://t.me/username"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
