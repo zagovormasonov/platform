@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
@@ -13,6 +13,7 @@ export function Navigation() {
   const [showExpertSearch, setShowExpertSearch] = useState(false)
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -27,23 +28,31 @@ export function Navigation() {
           setShowProfileMenu(false)
         }
       }
+      if (showMobileMenu) {
+        const target = event.target as HTMLElement
+        if (!target.closest('.mobile-menu')) {
+          setShowMobileMenu(false)
+        }
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showProfileMenu])
+  }, [showProfileMenu, showMobileMenu])
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-8">
-            <Link to="/" className="text-xl font-bold text-gray-900">
-              Spiritual Platform
-            </Link>
-            
+          {/* Logo */}
+          <Link to="/" className="text-lg sm:text-xl font-bold text-gray-900">
+            Spiritual Platform
+          </Link>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
             <nav className="flex items-center space-x-4">
               <Link
                 to="/feed"
@@ -65,10 +74,8 @@ export function Navigation() {
                 <Search className="h-5 w-5" />
               </button>
             </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Profile Dropdown Menu */}
+            
+            {/* Desktop Profile Menu */}
             <div className="relative profile-dropdown">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -79,7 +86,7 @@ export function Navigation() {
                 <ChevronDown className="h-4 w-4" />
               </button>
               
-              {/* Dropdown Menu */}
+              {/* Desktop Dropdown Menu */}
               {showProfileMenu && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <button
@@ -133,15 +140,106 @@ export function Navigation() {
               <span>Выйти</span>
             </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden mobile-menu">
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="md:hidden border-t border-gray-200 py-4">
+            <div className="space-y-2">
+              <Link
+                to="/feed"
+                onClick={() => setShowMobileMenu(false)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/feed')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Home className="h-4 w-4" />
+                <span>Лента</span>
+              </Link>
+              
+              <button
+                onClick={() => {
+                  setShowExpertSearch(true)
+                  setShowMobileMenu(false)
+                }}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Search className="h-4 w-4" />
+                <span>Поиск экспертов</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowUserProfile(true)
+                  setShowMobileMenu(false)
+                }}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Eye className="h-4 w-4" />
+                <span>Просмотр профиля</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowProfileForm(true)
+                  setShowMobileMenu(false)
+                }}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>Редактировать профиль</span>
+              </button>
+              
+              <Link
+                to="/dashboard"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Мои статьи</span>
+              </Link>
+              
+              <Link
+                to="/friends"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Users className="h-4 w-4" />
+                <span>Друзья</span>
+              </Link>
+              
+              <button
+                onClick={() => {
+                  signOut()
+                  setShowMobileMenu(false)
+                }}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Выйти</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
-      {/* Profile Form Modal */}
+      {/* Modals */}
       {showProfileForm && (
         <ProfileForm onClose={() => setShowProfileForm(false)} />
       )}
       
-      {/* Expert Search Modal */}
       {showExpertSearch && (
         <ExpertSearch onClose={() => setShowExpertSearch(false)} />
       )}

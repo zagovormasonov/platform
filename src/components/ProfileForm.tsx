@@ -364,8 +364,8 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Загрузка профиля...</p>
@@ -376,11 +376,11 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             Редактировать профиль
           </h2>
           <button
@@ -392,7 +392,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
           <div className="space-y-4">
             {/* Email (readonly) */}
             <div>
@@ -794,18 +794,18 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-end space-x-3 mt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary"
+              className="btn-secondary w-full sm:w-auto"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="btn-primary flex items-center space-x-2 disabled:opacity-50"
+              className="btn-primary flex items-center justify-center space-x-2 disabled:opacity-50 w-full sm:w-auto"
             >
               <Save className="h-4 w-4" />
               <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>

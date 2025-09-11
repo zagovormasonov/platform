@@ -203,11 +203,11 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
             Поиск экспертов
           </h2>
           <button
@@ -218,9 +218,9 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </button>
         </div>
 
-        <div className="flex h-full">
+        <div className="flex flex-col lg:flex-row h-full">
           {/* Filters Sidebar */}
-          <div className="w-80 border-r bg-gray-50 p-6 overflow-y-auto">
+          <div className="w-full lg:w-80 border-r bg-gray-50 p-4 sm:p-6 overflow-y-auto">
             <div className="space-y-6">
               {/* Search */}
               <div>
@@ -315,7 +315,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </div>
 
           {/* Results */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -338,10 +338,10 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-6">
+              <div className="grid gap-4 sm:gap-6">
                 {filteredExperts.map((expert) => (
-                  <div key={expert.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
+                  <div key={expert.id} className="border rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
                           <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -356,7 +356,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                             )}
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                               {expert.full_name || 'Эксперт'}
                             </h3>
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -445,7 +445,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                         </div>
                       </div>
 
-                      <div className="ml-6 flex flex-col space-y-2">
+                      <div className="mt-4 sm:mt-0 sm:ml-6 flex flex-col space-y-2">
                         <button
                           onClick={() => setSelectedExpertId(expert.id)}
                           className="btn-secondary flex items-center space-x-2"
