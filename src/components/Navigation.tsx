@@ -1,16 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, User, Users } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { LogOut, Home, Edit3, User, Users, Search, UserCheck } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
+import { ExpertSearch } from './ExpertSearch'
 
 export function Navigation() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const [showProfileForm, setShowProfileForm] = useState(false)
+  const [showExpertSearch, setShowExpertSearch] = useState(false)
+  const [userType, setUserType] = useState<'user' | 'expert' | null>(null)
 
   const isActive = (path: string) => {
     return location.pathname === path
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchUserType()
+    }
+  }, [user])
+
+  const fetchUserType = async () => {
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Ошибка загрузки типа пользователя:', error)
+        return
+      }
+
+      setUserType(data.user_type)
+    } catch (err) {
+      console.error('Ошибка загрузки типа пользователя:', err)
+    }
   }
 
   return (
@@ -34,6 +65,14 @@ export function Navigation() {
                 <Home className="h-4 w-4" />
                 <span>Лента</span>
               </Link>
+              
+              <button
+                onClick={() => setShowExpertSearch(true)}
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <Search className="h-4 w-4" />
+                <span>Поиск экспертов</span>
+              </button>
               
               <Link
                 to="/dashboard"
@@ -62,9 +101,16 @@ export function Navigation() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600">
-              {user?.email}
-            </span>
+            <div className="flex items-center space-x-2">
+              {userType === 'expert' ? (
+                <UserCheck className="h-4 w-4 text-blue-600" />
+              ) : (
+                <Users className="h-4 w-4 text-gray-400" />
+              )}
+              <span className="text-sm text-gray-600">
+                {user?.email}
+              </span>
+            </div>
             <Link
               to="/profile"
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -90,6 +136,11 @@ export function Navigation() {
       {/* Profile Form Modal */}
       {showProfileForm && (
         <ProfileForm onClose={() => setShowProfileForm(false)} />
+      )}
+      
+      {/* Expert Search Modal */}
+      {showExpertSearch && (
+        <ExpertSearch onClose={() => setShowExpertSearch(false)} />
       )}
     </header>
   )

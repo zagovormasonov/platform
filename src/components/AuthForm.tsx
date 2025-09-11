@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Lock, Eye, EyeOff, UserCheck, Users } from 'lucide-react'
 
 interface AuthFormProps {
   mode: 'signin' | 'signup'
@@ -12,6 +12,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [userType, setUserType] = useState<'user' | 'expert'>('user')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -25,7 +26,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
-        const { error } = await signUp(email, password, fullName)
+        const { error } = await signUp(email, password, fullName, userType)
         if (error) {
           setError(error.message)
         } else {
@@ -65,24 +66,64 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             {mode === 'signup' && (
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                  Полное имя
-                </label>
-                <div className="mt-1 relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    id="fullName"
-                    name="fullName"
-                    type="text"
-                    required={mode === 'signup'}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="input-field pl-10"
-                    placeholder="Введите ваше полное имя"
-                  />
+              <>
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                    Полное имя
+                  </label>
+                  <div className="mt-1 relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      id="fullName"
+                      name="fullName"
+                      type="text"
+                      required={mode === 'signup'}
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="input-field pl-10"
+                      placeholder="Введите ваше полное имя"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Тип аккаунта
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setUserType('user')}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        userType === 'user'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <Users className="h-6 w-6 mx-auto mb-2" />
+                      <div className="text-sm font-medium">Пользователь</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Ищу духовные практики
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserType('expert')}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        userType === 'expert'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <UserCheck className="h-6 w-6 mx-auto mb-2" />
+                      <div className="text-sm font-medium">Эксперт</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Предоставляю услуги
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
 
             <div>

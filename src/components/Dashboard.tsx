@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff, UserCheck, Users, AlertCircle } from 'lucide-react'
 import { ArticleForm } from './ArticleForm'
 import { PageLayout } from './PageLayout'
 
@@ -14,16 +14,45 @@ interface Article {
   updated_at: string
 }
 
+interface Profile {
+  id: string
+  user_type: 'user' | 'expert'
+  full_name: string | null
+}
+
 export function Dashboard() {
   const { user } = useAuth()
   const [articles, setArticles] = useState<Article[]>([])
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showArticleForm, setShowArticleForm] = useState(false)
   const [editingArticle, setEditingArticle] = useState<Article | null>(null)
 
   useEffect(() => {
+    fetchProfile()
     fetchArticles()
   }, [])
+
+  const fetchProfile = async () => {
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, user_type, full_name')
+        .eq('id', user.id)
+        .single()
+
+      if (error) {
+        console.error('Ошибка загрузки профиля:', error)
+        return
+      }
+
+      setProfile(data)
+    } catch (error) {
+      console.error('Ошибка загрузки профиля:', error)
+    }
+  }
 
   const fetchArticles = async () => {
     if (!user) return
@@ -122,17 +151,48 @@ export function Dashboard() {
   return (
     <PageLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* User Type Info */}
+        {profile && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-3">
+              {profile.user_type === 'expert' ? (
+                <UserCheck className="h-6 w-6 text-blue-600" />
+              ) : (
+                <Users className="h-6 w-6 text-blue-600" />
+              )}
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900">
+                  {profile.user_type === 'expert' ? 'Эксперт' : 'Пользователь'}
+                </h3>
+                <p className="text-sm text-blue-700">
+                  {profile.user_type === 'expert' 
+                    ? 'Вы можете создавать статьи и получать заявки от клиентов'
+                    : 'Вы можете искать экспертов и оставлять отзывы'
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Мои статьи</h2>
-            <button
-              onClick={() => setShowArticleForm(true)}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Создать статью</span>
-            </button>
+            {profile?.user_type === 'expert' ? (
+              <button
+                onClick={() => setShowArticleForm(true)}
+                className="btn-primary flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Создать статью</span>
+              </button>
+            ) : (
+              <div className="flex items-center space-x-2 text-gray-500">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">Только эксперты могут создавать статьи</span>
+              </div>
+            )}
           </div>
 
           {/* Articles List */}
@@ -143,14 +203,19 @@ export function Dashboard() {
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">Пока нет статей</h3>
               <p className="mt-2 text-gray-600">
-                Создайте свою первую статью, чтобы поделиться духовным опытом
+                {profile?.user_type === 'expert' 
+                  ? 'Создайте свою первую статью, чтобы поделиться духовным опытом'
+                  : 'Только эксперты могут создавать статьи. Станьте экспертом, чтобы делиться знаниями!'
+                }
               </p>
-              <button
-                onClick={() => setShowArticleForm(true)}
-                className="mt-4 btn-primary"
-              >
-                Создать статью
-              </button>
+              {profile?.user_type === 'expert' && (
+                <button
+                  onClick={() => setShowArticleForm(true)}
+                  className="mt-4 btn-primary"
+                >
+                  Создать статью
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-6">
@@ -213,7 +278,7 @@ export function Dashboard() {
       </div>
 
       {/* Article Form Modal */}
-      {showArticleForm && (
+      {showArticleForm && profile?.user_type === 'expert' && (
         <ArticleForm
           article={editingArticle}
           onSave={handleArticleSaved}
