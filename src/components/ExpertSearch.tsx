@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X } from 'lucide-react'
+import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X, Eye } from 'lucide-react'
+import { ExpertProfile } from './ExpertProfile'
 
 interface Expert {
   id: string
@@ -44,6 +45,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [sortBy, setSortBy] = useState<'rating' | 'newest' | 'requests'>('rating')
   const [requestReason, setRequestReason] = useState('')
   const [cities, setCities] = useState<string[]>([])
+  const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null)
 
   const requestReasons = [
     'здоровье',
@@ -443,7 +445,14 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                         </div>
                       </div>
 
-                      <div className="ml-6">
+                      <div className="ml-6 flex flex-col space-y-2">
+                        <button
+                          onClick={() => setSelectedExpertId(expert.id)}
+                          className="btn-secondary flex items-center space-x-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>Посмотреть профиль</span>
+                        </button>
                         <button
                           onClick={() => handleRequestExpert(expert.id)}
                           className="btn-primary"
@@ -459,6 +468,14 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </div>
         </div>
       </div>
+
+      {/* Expert Profile Modal */}
+      {selectedExpertId && (
+        <ExpertProfile
+          expertId={selectedExpertId}
+          onClose={() => setSelectedExpertId(null)}
+        />
+      )}
     </div>
   )
 }

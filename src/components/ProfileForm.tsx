@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRefresh } from '../contexts/RefreshContext'
 import { supabase } from '../lib/supabase'
-import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone } from 'lucide-react'
+import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload } from 'lucide-react'
 
 interface Profile {
   id: string
@@ -62,6 +62,8 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (user) {
@@ -261,6 +263,74 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
     )
   }
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    // Проверяем размер файла (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Размер файла не должен превышать 5MB')
+      return
+    }
+
+    // Проверяем тип файла
+    if (!file.type.startsWith('image/')) {
+      setError('Пожалуйста, выберите изображение')
+      return
+    }
+
+    setUploadingAvatar(true)
+    setError('')
+
+    try {
+      // Создаем уникальное имя файла
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      // Загружаем файл в Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        })
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      // Получаем публичный URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      // Обновляем профиль с новым URL аватара
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      // Обновляем локальное состояние
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null)
+      setMessage('Аватар успешно обновлен!')
+      
+      // Очищаем input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } catch (err: any) {
+      console.error('Ошибка загрузки аватара:', err)
+      setError(err.message || 'Произошла ошибка при загрузке аватара')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -331,6 +401,57 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
               <p className="mt-1 text-xs text-gray-500">
                 Это имя будет отображаться как автор ваших статей
               </p>
+            </div>
+
+            {/* Avatar Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Фотография профиля
+              </label>
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt="Аватар"
+                      className="w-16 h-16 object-cover"
+                    />
+                  ) : (
+                    <User className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <label
+                    htmlFor="avatar-upload"
+                    className={`inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                      uploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span className="text-sm text-gray-600">Загрузка...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 text-gray-600" />
+                        <span className="text-sm text-gray-600">Загрузить фото</span>
+                      </>
+                    )}
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500">
+                    JPG, PNG до 5MB
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Bio */}
