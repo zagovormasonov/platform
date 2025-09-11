@@ -16,6 +16,7 @@ interface Article {
   profiles: {
     full_name: string | null
     email: string
+    avatar_url: string | null
   } | null
 }
 
@@ -44,7 +45,8 @@ export function Feed() {
           updated_at,
           profiles!articles_author_id_fkey (
             full_name,
-            email
+            email,
+            avatar_url
           )
         `)
         .eq('published', true)
@@ -59,7 +61,7 @@ export function Feed() {
       // Приводим данные к правильному типу
       const typedData = data?.map(article => ({
         ...article,
-        profiles: (article.profiles as any) as { full_name: string | null; email: string } | null
+        profiles: (article.profiles as any) as { full_name: string | null; email: string; avatar_url: string | null } | null
       })) || []
       
       setArticles(typedData)
@@ -166,9 +168,19 @@ export function Feed() {
                   <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
                     <button
                       onClick={() => handleAuthorClick(article.author_id)}
-                      className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                      className="flex items-center space-x-2 hover:text-blue-600 transition-colors"
                     >
-                      <User className="h-4 w-4" />
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                        {article.profiles?.avatar_url ? (
+                          <img
+                            src={article.profiles.avatar_url}
+                            alt={getAuthorName(article.profiles)}
+                            className="w-8 h-8 object-cover"
+                          />
+                        ) : (
+                          <User className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
                       <span>{getAuthorName(article.profiles)}</span>
                     </button>
                     <div className="flex items-center space-x-1">
