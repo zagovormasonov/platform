@@ -10,8 +10,8 @@ import {
   Search,
   User
 } from 'lucide-react'
-import { Navigation } from './Navigation'
 import { UserProfile } from './UserProfile'
+import { PageLayout } from './PageLayout'
 
 interface Profile {
   id: string
@@ -294,9 +294,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
+    <PageLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -515,6 +513,6 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }

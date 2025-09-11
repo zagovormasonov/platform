@@ -17,8 +17,8 @@ import {
   Edit,
   ArrowLeft
 } from 'lucide-react'
-import { Navigation } from './Navigation'
 import { ProfileForm } from './ProfileForm'
+import { PageLayout } from './PageLayout'
 
 interface Profile {
   id: string
@@ -311,9 +311,7 @@ export function UserProfile({ userId, onBack }: UserProfileProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
+    <PageLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -510,6 +508,6 @@ export function UserProfile({ userId, onBack }: UserProfileProps) {
       {showEditForm && (
         <ProfileForm onClose={() => setShowEditForm(false)} />
       )}
-    </div>
+    </PageLayout>
   )
 }

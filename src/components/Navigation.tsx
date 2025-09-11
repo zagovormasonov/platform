@@ -1,17 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Settings, User, Users } from 'lucide-react'
+import { LogOut, Home, Edit3, User, Users } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
-import { UserProfile } from './UserProfile'
-import { FriendsPage } from './FriendsPage'
 
 export function Navigation() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const [showProfileForm, setShowProfileForm] = useState(false)
-  const [showUserProfile, setShowUserProfile] = useState(false)
-  const [showFriendsPage, setShowFriendsPage] = useState(false)
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -51,13 +47,17 @@ export function Navigation() {
                 <span>Мои статьи</span>
               </Link>
               
-              <button
-                onClick={() => setShowFriendsPage(true)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              <Link
+                to="/friends"
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/friends')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
               >
                 <Users className="h-4 w-4" />
                 <span>Друзья</span>
-              </button>
+              </Link>
             </nav>
           </div>
           
@@ -65,22 +65,17 @@ export function Navigation() {
             <span className="text-sm text-gray-600">
               {user?.email}
             </span>
-            <button
-              onClick={() => setShowUserProfile(true)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
-              title="Просмотреть профиль"
+            <Link
+              to="/profile"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/profile')
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <User className="h-4 w-4" />
               <span>Мой профиль</span>
-            </button>
-            <button
-              onClick={() => setShowProfileForm(true)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
-              title="Редактировать профиль"
-            >
-              <Settings className="h-4 w-4" />
-              <span>Настройки</span>
-            </button>
+            </Link>
             <button
               onClick={signOut}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
@@ -95,19 +90,6 @@ export function Navigation() {
       {/* Profile Form Modal */}
       {showProfileForm && (
         <ProfileForm onClose={() => setShowProfileForm(false)} />
-      )}
-      
-      {/* User Profile Modal */}
-      {showUserProfile && user && (
-        <UserProfile 
-          userId={user.id} 
-          onBack={() => setShowUserProfile(false)} 
-        />
-      )}
-      
-      {/* Friends Page Modal */}
-      {showFriendsPage && (
-        <FriendsPage onBack={() => setShowFriendsPage(false)} />
       )}
     </header>
   )

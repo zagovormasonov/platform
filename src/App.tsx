@@ -5,6 +5,8 @@ import { RefreshProvider } from './contexts/RefreshContext'
 import { AuthForm } from './components/AuthForm'
 import { Dashboard } from './components/Dashboard'
 import { Feed } from './components/Feed'
+import { UserProfile } from './components/UserProfile'
+import { FriendsPage } from './components/FriendsPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function AppContent() {
@@ -51,6 +53,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute>
+              <UserProfile userId={user?.id || ''} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/friends" 
+          element={
+            <ProtectedRoute>
+              <FriendsPage />
             </ProtectedRoute>
           } 
         />

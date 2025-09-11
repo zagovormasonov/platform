@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Calendar, User, Eye } from 'lucide-react'
-import { Navigation } from './Navigation'
 import { useRefresh } from '../contexts/RefreshContext'
 import { UserProfile } from './UserProfile'
+import { PageLayout } from './PageLayout'
 
 interface Article {
   id: string
@@ -143,9 +143,7 @@ export function Feed() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-
+    <PageLayout>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {articles.length === 0 ? (
           <div className="text-center py-12">
@@ -202,6 +200,6 @@ export function Feed() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   )
 }
