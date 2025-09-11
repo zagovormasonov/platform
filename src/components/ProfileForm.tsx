@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRefresh } from '../contexts/RefreshContext'
 import { supabase } from '../lib/supabase'
-import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Camera, Check } from 'lucide-react'
+import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone } from 'lucide-react'
 
 interface Profile {
   id: string
@@ -35,13 +35,6 @@ interface Category {
   description: string | null
 }
 
-interface ExpertCategory {
-  id: string
-  expert_id: string
-  category_id: string
-  category: Category
-}
-
 interface ProfileFormProps {
   onClose: () => void
 }
@@ -51,7 +44,6 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   const { triggerRefresh } = useRefresh()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [expertCategories, setExpertCategories] = useState<ExpertCategory[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [fullName, setFullName] = useState('')
   const [bio, setBio] = useState('')
@@ -154,7 +146,6 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
         return
       }
 
-      setExpertCategories(data || [])
       setSelectedCategories(data?.map(ec => ec.category_id) || [])
     } catch (err) {
       console.error('Ошибка загрузки категорий эксперта:', err)

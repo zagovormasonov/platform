@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Search, MapPin, Star, Users, Filter, Phone, Globe, MessageCircle, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X } from 'lucide-react'
 
 interface Expert {
   id: string
@@ -43,7 +43,6 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [selectedCity, setSelectedCity] = useState('')
   const [sortBy, setSortBy] = useState<'rating' | 'newest' | 'requests'>('rating')
   const [requestReason, setRequestReason] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
   const [cities, setCities] = useState<string[]>([])
 
   const requestReasons = [
