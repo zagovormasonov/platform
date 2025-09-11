@@ -19,7 +19,7 @@ interface Review {
 
 interface ReviewsProps {
   expertId: string
-  onClose: () => void
+  onClose?: () => void
 }
 
 export function Reviews({ expertId, onClose }: ReviewsProps) {
@@ -155,12 +155,14 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
           <h2 className="text-2xl font-bold text-gray-900">
             Отзывы
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          )}
         </div>
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">

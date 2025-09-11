@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { LogOut, Home, Edit3, User, Users, Search, UserCheck } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, UserCheck, Eye } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
+import { UserProfile } from './UserProfile'
 
 export function Navigation() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const [showProfileForm, setShowProfileForm] = useState(false)
   const [showExpertSearch, setShowExpertSearch] = useState(false)
+  const [showUserProfile, setShowUserProfile] = useState(false)
   const [userType, setUserType] = useState<'user' | 'expert' | null>(null)
 
   const isActive = (path: string) => {
@@ -111,17 +113,13 @@ export function Navigation() {
                 {user?.email}
               </span>
             </div>
-            <Link
-              to="/profile"
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/profile')
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+            <button
+              onClick={() => setShowUserProfile(true)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
-              <User className="h-4 w-4" />
+              <Eye className="h-4 w-4" />
               <span>Мой профиль</span>
-            </Link>
+            </button>
             <button
               onClick={signOut}
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
@@ -141,6 +139,13 @@ export function Navigation() {
       {/* Expert Search Modal */}
       {showExpertSearch && (
         <ExpertSearch onClose={() => setShowExpertSearch(false)} />
+      )}
+      
+      {showUserProfile && user && (
+        <UserProfile 
+          userId={user.id} 
+          onClose={() => setShowUserProfile(false)} 
+        />
       )}
     </header>
   )

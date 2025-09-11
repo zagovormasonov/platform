@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  Globe, 
-  Github, 
-  Linkedin, 
-  Twitter, 
-  Instagram, 
-  MessageCircle,
-  Plus,
-  Check,
-  X,
-  Edit,
-  ArrowLeft
-} from 'lucide-react'
-import { ProfileForm } from './ProfileForm'
-import { PageLayout } from './PageLayout'
+import { X, User, Mail, MapPin, Phone, Globe, MessageCircle, Star, Users, Calendar, Award } from 'lucide-react'
+import { Reviews } from './Reviews'
+
+interface UserProfileProps {
+  userId: string
+  onClose?: () => void
+  onBack?: () => void
+}
 
 interface Profile {
   id: string
@@ -32,176 +21,63 @@ interface Profile {
   twitter_url: string | null
   instagram_url: string | null
   telegram_url: string | null
+  user_type: 'user' | 'expert'
+  phone: string | null
+  city: string | null
+  description: string | null
+  accepts_online: boolean
+  accepts_offline: boolean
+  rating: number | null
+  total_reviews: number
+  total_requests: number
   created_at: string
-  updated_at: string
+  categories?: Array<{
+    category: {
+      id: string
+      name: string
+      description: string
+    }
+  }>
 }
 
-interface Article {
-  id: string
-  title: string
-  content: string
-  published: boolean
-  created_at: string
-  updated_at: string
-}
-
-interface Friendship {
-  id: string
-  user_id: string
-  friend_id: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
-interface UserProfileProps {
-  userId: string
-  onBack?: () => void
-}
-
-export function UserProfile({ userId, onBack }: UserProfileProps) {
-  const { user } = useAuth()
+export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
+  const handleClose = onClose || onBack || (() => {})
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [articles, setArticles] = useState<Article[]>([])
-  const [friendship, setFriendship] = useState<Friendship | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showEditForm, setShowEditForm] = useState(false)
-  const [friendshipLoading, setFriendshipLoading] = useState(false)
 
   useEffect(() => {
-    if (userId) {
-      fetchUserData()
-    }
+    fetchProfile()
   }, [userId])
 
-  const fetchUserData = async () => {
+  const fetchProfile = async () => {
     try {
       setLoading(true)
-      
-      // Загружаем профиль пользователя
-      const { data: profileData, error: profileError } = await supabase
+      setError('')
+
+      let query = supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          categories:expert_categories(
+            category:categories(*)
+          )
+        `)
         .eq('id', userId)
         .single()
 
-      if (profileError) {
-        console.error('Ошибка загрузки профиля:', profileError)
-        setError('Не удалось загрузить профиль пользователя')
-        return
+      const { data, error } = await query
+
+      if (error) {
+        throw error
       }
 
-      setProfile(profileData)
-
-      // Загружаем статьи пользователя
-      const { data: articlesData, error: articlesError } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('author_id', userId)
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-
-      if (articlesError) {
-        console.error('Ошибка загрузки статей:', articlesError)
-      } else {
-        setArticles(articlesData || [])
-      }
-
-      // Загружаем информацию о дружбе (если пользователь авторизован)
-      if (user && user.id !== userId) {
-        const { data: friendshipData, error: friendshipError } = await supabase
-          .from('friendships')
-          .select('*')
-          .or(`and(user_id.eq.${user.id},friend_id.eq.${userId}),and(user_id.eq.${userId},friend_id.eq.${user.id})`)
-          .single()
-
-        if (friendshipError && friendshipError.code !== 'PGRST116') {
-          console.error('Ошибка загрузки информации о дружбе:', friendshipError)
-        } else {
-          setFriendship(friendshipData)
-        }
-      }
-
-    } catch (err) {
-      console.error('Ошибка загрузки данных:', err)
-      setError('Произошла неожиданная ошибка')
+      setProfile(data)
+    } catch (err: any) {
+      console.error('Ошибка загрузки профиля:', err)
+      setError('Не удалось загрузить профиль пользователя')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleAddFriend = async () => {
-    if (!user || !profile) return
-
-    setFriendshipLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('friendships')
-        .insert({
-          user_id: user.id,
-          friend_id: profile.id,
-          status: 'pending'
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Ошибка добавления в друзья:', error)
-        return
-      }
-
-      setFriendship(data)
-    } catch (err) {
-      console.error('Ошибка добавления в друзья:', err)
-    } finally {
-      setFriendshipLoading(false)
-    }
-  }
-
-  const handleAcceptFriend = async () => {
-    if (!friendship) return
-
-    setFriendshipLoading(true)
-    try {
-      const { error } = await supabase
-        .from('friendships')
-        .update({ status: 'accepted' })
-        .eq('id', friendship.id)
-
-      if (error) {
-        console.error('Ошибка принятия заявки:', error)
-        return
-      }
-
-      setFriendship({ ...friendship, status: 'accepted' })
-    } catch (err) {
-      console.error('Ошибка принятия заявки:', err)
-    } finally {
-      setFriendshipLoading(false)
-    }
-  }
-
-  const handleRejectFriend = async () => {
-    if (!friendship) return
-
-    setFriendshipLoading(true)
-    try {
-      const { error } = await supabase
-        .from('friendships')
-        .delete()
-        .eq('id', friendship.id)
-
-      if (error) {
-        console.error('Ошибка отклонения заявки:', error)
-        return
-      }
-
-      setFriendship(null)
-    } catch (err) {
-      console.error('Ошибка отклонения заявки:', err)
-    } finally {
-      setFriendshipLoading(false)
     }
   }
 
@@ -213,301 +89,289 @@ export function UserProfile({ userId, onBack }: UserProfileProps) {
     })
   }
 
-  const getSocialIcon = (platform: string) => {
-    switch (platform) {
-      case 'website': return <Globe className="h-5 w-5" />
-      case 'github': return <Github className="h-5 w-5" />
-      case 'linkedin': return <Linkedin className="h-5 w-5" />
-      case 'twitter': return <Twitter className="h-5 w-5" />
-      case 'instagram': return <Instagram className="h-5 w-5" />
-      case 'telegram': return <MessageCircle className="h-5 w-5" />
-      default: return <Globe className="h-5 w-5" />
-    }
-  }
-
-  const getSocialLinks = () => {
-    if (!profile) return []
-    
-    const links = []
-    if (profile.website_url) links.push({ platform: 'website', url: profile.website_url, label: 'Веб-сайт' })
-    if (profile.github_url) links.push({ platform: 'github', url: profile.github_url, label: 'GitHub' })
-    if (profile.linkedin_url) links.push({ platform: 'linkedin', url: profile.linkedin_url, label: 'LinkedIn' })
-    if (profile.twitter_url) links.push({ platform: 'twitter', url: profile.twitter_url, label: 'Twitter' })
-    if (profile.instagram_url) links.push({ platform: 'instagram', url: profile.instagram_url, label: 'Instagram' })
-    if (profile.telegram_url) links.push({ platform: 'telegram', url: profile.telegram_url, label: 'Telegram' })
-    
-    return links
-  }
-
-  const getAuthorName = () => {
-    if (!profile) return 'Неизвестный пользователь'
-    
-    if (profile.full_name && profile.full_name.trim()) {
-      return profile.full_name
-    }
-    
-    if (profile.email) {
-      return profile.email.split('@')[0]
-    }
-    
-    return 'Неизвестный пользователь'
-  }
-
-  const isOwnProfile = user && profile && user.id === profile.id
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Загрузка профиля...</p>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  if (error) {
+  if (error || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
-            <User className="h-6 w-6 text-red-600" />
-          </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
-          <p className="mt-2 text-gray-600">{error}</p>
-          {onBack && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Ошибка</h2>
             <button
-              onClick={onBack}
-              className="mt-4 btn-primary"
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Назад
+              <X className="h-6 w-6" />
             </button>
-          )}
+          </div>
+          <p className="text-gray-600 mb-4">{error || 'Профиль не найден'}</p>
+          <button
+            onClick={handleClose}
+            className="w-full btn-primary"
+          >
+            Закрыть
+          </button>
         </div>
       </div>
     )
   }
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gray-100">
-            <User className="h-6 w-6 text-gray-400" />
-          </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Пользователь не найден</h3>
-          <p className="mt-2 text-gray-600">Профиль пользователя не существует</p>
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="mt-4 btn-primary"
-            >
-              Назад
-            </button>
-          )}
-        </div>
-      </div>
-    )
-  }
+  const isExpert = profile.user_type === 'expert'
 
   return (
-    <PageLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="mb-8">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>Назад</span>
-            </button>
-          )}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Профиль {isExpert ? 'эксперта' : 'пользователя'}
+          </h2>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
         </div>
 
-        {/* Profile Card */}
-        <div className="card mb-8">
-          <div className="flex flex-col md:flex-row md:items-start space-y-4 md:space-y-0 md:space-x-6">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div className="h-24 w-24 rounded-full bg-gray-200 flex items-center justify-center">
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+          <div className="p-6">
+            {/* Profile Header */}
+            <div className="flex items-start space-x-6 mb-8">
+              {/* Avatar */}
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
-                    alt={getAuthorName()}
-                    className="h-24 w-24 rounded-full object-cover"
+                    alt="Аватар"
+                    className="w-24 h-24 object-cover"
                   />
                 ) : (
                   <User className="h-12 w-12 text-gray-400" />
                 )}
               </div>
-            </div>
 
-            {/* Profile Info */}
-            <div className="flex-1">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {getAuthorName()}
-                  </h1>
-                  <div className="flex items-center space-x-2 text-gray-500 mt-1">
+              {/* Basic Info */}
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  {profile.full_name || 'Без имени'}
+                </h3>
+                
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="flex items-center space-x-1 text-gray-600">
                     <Mail className="h-4 w-4" />
-                    <span>{profile.email}</span>
+                    <span className="text-sm">{profile.email}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-gray-500 mt-1">
+                  
+                  {profile.city && (
+                    <div className="flex items-center space-x-1 text-gray-600">
+                      <MapPin className="h-4 w-4" />
+                      <span className="text-sm">{profile.city}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center space-x-1 text-gray-600">
                     <Calendar className="h-4 w-4" />
-                    <span>На платформе с {formatDate(profile.created_at)}</span>
+                    <span className="text-sm">На платформе с {formatDate(profile.created_at)}</span>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  {isOwnProfile ? (
-                    <button
-                      onClick={() => setShowEditForm(true)}
-                      className="btn-secondary flex items-center space-x-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span>Редактировать</span>
-                    </button>
-                  ) : user && (
-                    <div className="flex space-x-2">
-                      {!friendship && (
-                        <button
-                          onClick={handleAddFriend}
-                          disabled={friendshipLoading}
-                          className="btn-primary flex items-center space-x-2 disabled:opacity-50"
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>{friendshipLoading ? 'Добавление...' : 'Добавить в друзья'}</span>
-                        </button>
-                      )}
-                      
-                      {friendship?.status === 'pending' && friendship.user_id === user.id && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={handleRejectFriend}
-                            disabled={friendshipLoading}
-                            className="btn-secondary flex items-center space-x-2 disabled:opacity-50"
-                          >
-                            <X className="h-4 w-4" />
-                            <span>Отменить</span>
-                          </button>
-                        </div>
-                      )}
-                      
-                      {friendship?.status === 'pending' && friendship.friend_id === user.id && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={handleAcceptFriend}
-                            disabled={friendshipLoading}
-                            className="btn-primary flex items-center space-x-2 disabled:opacity-50"
-                          >
-                            <Check className="h-4 w-4" />
-                            <span>Принять</span>
-                          </button>
-                          <button
-                            onClick={handleRejectFriend}
-                            disabled={friendshipLoading}
-                            className="btn-secondary flex items-center space-x-2 disabled:opacity-50"
-                          >
-                            <X className="h-4 w-4" />
-                            <span>Отклонить</span>
-                          </button>
-                        </div>
-                      )}
-                      
-                      {friendship?.status === 'accepted' && (
-                        <div className="flex items-center space-x-2 text-green-600">
-                          <Check className="h-4 w-4" />
-                          <span>Друзья</span>
-                        </div>
-                      )}
-                    </div>
+                {/* User Type Badge */}
+                <div className="inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium mb-4">
+                  {isExpert ? (
+                    <>
+                      <Award className="h-4 w-4 text-purple-600" />
+                      <span className="text-purple-800 bg-purple-100 px-2 py-1 rounded-full">
+                        Эксперт
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="h-4 w-4 text-blue-600" />
+                      <span className="text-blue-800 bg-blue-100 px-2 py-1 rounded-full">
+                        Пользователь
+                      </span>
+                    </>
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* Bio */}
-              {profile.bio && (
-                <div className="mt-4">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {/* Expert-specific sections */}
+            {isExpert && (
+              <>
+                {/* Rating and Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Star className="h-5 w-5 text-yellow-600" />
+                      <span className="font-semibold text-yellow-800">Рейтинг</span>
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-900">
+                      {profile.rating ? profile.rating.toFixed(1) : 'Нет оценок'}
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      {profile.total_reviews} отзывов
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Users className="h-5 w-5 text-green-600" />
+                      <span className="font-semibold text-green-800">Заявки</span>
+                    </div>
+                    <div className="text-2xl font-bold text-green-900">
+                      {profile.total_requests}
+                    </div>
+                    <div className="text-sm text-green-700">
+                      обращений
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Globe className="h-5 w-5 text-blue-600" />
+                      <span className="font-semibold text-blue-800">Консультации</span>
+                    </div>
+                    <div className="space-y-1">
+                      {profile.accepts_online && (
+                        <div className="text-sm text-blue-700">✓ Онлайн</div>
+                      )}
+                      {profile.accepts_offline && (
+                        <div className="text-sm text-blue-700">✓ Оффлайн</div>
+                      )}
+                      {!profile.accepts_online && !profile.accepts_offline && (
+                        <div className="text-sm text-gray-500">Не указано</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Categories */}
+                {profile.categories && profile.categories.length > 0 && (
+                  <div className="mb-8">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Направления деятельности</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {profile.categories.map((cat) => (
+                        <div
+                          key={cat.category.id}
+                          className="bg-purple-50 border border-purple-200 rounded-lg p-3"
+                        >
+                          <div className="font-medium text-purple-900">
+                            {cat.category.name}
+                          </div>
+                          <div className="text-sm text-purple-700 mt-1">
+                            {cat.category.description}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {profile.description && (
+                  <div className="mb-8">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Описание услуг</h4>
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {profile.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Bio */}
+            {profile.bio && (
+              <div className="mb-8">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">О себе</h4>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-700 whitespace-pre-wrap">
                     {profile.bio}
                   </p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Social Links */}
-              {getSocialLinks().length > 0 && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium text-gray-900 mb-2">Ссылки</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {getSocialLinks().map((link, index) => (
+            {/* Contact Information */}
+            <div className="mb-8">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Контактная информация</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.phone && (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <Phone className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Телефон</div>
                       <a
-                        key={index}
-                        href={link.url}
+                        href={`tel:${profile.phone}`}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        {profile.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {profile.website_url && (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <Globe className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Сайт</div>
+                      <a
+                        href={profile.website_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 transition-colors"
+                        className="text-blue-600 hover:text-blue-800"
                       >
-                        {getSocialIcon(link.platform)}
-                        <span className="text-sm">{link.label}</span>
+                        {profile.website_url}
                       </a>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {profile.telegram_url && (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Telegram</div>
+                      <a
+                        href={profile.telegram_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        {profile.telegram_url}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Reviews (only for experts) */}
+            {isExpert && (
+              <div>
+                <Reviews expertId={profile.id} />
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Articles */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">
-            Статьи пользователя ({articles.length})
-          </h2>
-          
-          {articles.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gray-100">
-                <User className="h-6 w-6 text-gray-400" />
-              </div>
-              <h3 className="mt-4 text-lg font-medium text-gray-900">Пока нет статей</h3>
-              <p className="mt-2 text-gray-600">
-                {isOwnProfile ? 'Вы еще не опубликовали ни одной статьи' : 'Этот пользователь еще не опубликовал ни одной статьи'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {articles.map((article) => (
-                <div key={article.id} className="border-b border-gray-100 pb-6 last:border-b-0">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-600 mb-3 line-clamp-3">
-                    {article.content}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(article.created_at)}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <span>Опубликовано</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-
-      {/* Edit Profile Form */}
-      {showEditForm && (
-        <ProfileForm onClose={() => setShowEditForm(false)} />
-      )}
-    </PageLayout>
+    </div>
   )
 }
