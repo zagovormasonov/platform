@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRefresh } from '../contexts/RefreshContext'
 import { supabase } from '../lib/supabase'
-import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload } from 'lucide-react'
+import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload, ChevronDown } from 'lucide-react'
+import { RUSSIAN_CITIES } from '../data/russianCities'
 
 interface Profile {
   id: string
@@ -64,6 +65,8 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
   const [message, setMessage] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showCityDropdown, setShowCityDropdown] = useState(false)
+  const [citySearchTerm, setCitySearchTerm] = useState('')
 
   useEffect(() => {
     if (user) {
@@ -71,6 +74,23 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       fetchCategories()
     }
   }, [user])
+
+  // Close city dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCityDropdown) {
+        const target = event.target as HTMLElement
+        if (!target.closest('.city-dropdown')) {
+          setShowCityDropdown(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCityDropdown])
 
   const fetchProfile = async () => {
     if (!user) return
@@ -94,6 +114,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       setDescription(data.description || '')
       setPhone(data.phone || '')
       setCity(data.city || '')
+      setCitySearchTerm(data.city || '')
       setWebsiteUrl(data.website_url || '')
       setGithubUrl(data.github_url || '')
       setLinkedinUrl(data.linkedin_url || '')
@@ -261,6 +282,16 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
         ? prev.filter(id => id !== categoryId)
         : [...prev, categoryId]
     )
+  }
+
+  const filteredCities = RUSSIAN_CITIES.filter(city =>
+    city.toLowerCase().includes(citySearchTerm.toLowerCase())
+  )
+
+  const handleCitySelect = (selectedCity: string) => {
+    setCity(selectedCity)
+    setCitySearchTerm(selectedCity)
+    setShowCityDropdown(false)
   }
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,16 +556,50 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
                   <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
                     Город
                   </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <div className="relative city-dropdown">
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
                     <input
                       id="city"
                       type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="input-field pl-10"
-                      placeholder="Москва"
+                      value={citySearchTerm}
+                      onChange={(e) => {
+                        setCitySearchTerm(e.target.value)
+                        setShowCityDropdown(true)
+                      }}
+                      onFocus={() => setShowCityDropdown(true)}
+                      className="input-field pl-10 pr-10"
+                      placeholder="Начните вводить название города..."
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowCityDropdown(!showCityDropdown)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <ChevronDown className={`h-5 w-5 transition-transform ${showCityDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {/* Dropdown */}
+                    {showCityDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
+                        {filteredCities.length > 0 ? (
+                          filteredCities.map((cityName) => (
+                            <button
+                              key={cityName}
+                              type="button"
+                              onClick={() => handleCitySelect(cityName)}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-2"
+                            >
+                              <MapPin className="h-4 w-4 text-gray-400" />
+                              <span>{cityName}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500 text-sm">
+                            Город не найден
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-red-500">
                     ⚠️ Если вы не укажете город, вас не найдут в поиске
