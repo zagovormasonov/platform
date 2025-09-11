@@ -22,23 +22,36 @@ export function Navigation() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showProfileMenu) {
-        const target = event.target as HTMLElement
-        if (!target.closest('.profile-dropdown')) {
+      const target = event.target as HTMLElement
+      
+      if (showProfileMenu && !target.closest('.profile-dropdown')) {
+        setShowProfileMenu(false)
+      }
+      
+      if (showMobileMenu && !target.closest('.mobile-menu')) {
+        setShowMobileMenu(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showProfileMenu) {
           setShowProfileMenu(false)
         }
-      }
-      if (showMobileMenu) {
-        const target = event.target as HTMLElement
-        if (!target.closest('.mobile-menu')) {
+        if (showMobileMenu) {
           setShowMobileMenu(false)
         }
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    if (showProfileMenu || showMobileMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
     }
   }, [showProfileMenu, showMobileMenu])
 
@@ -154,12 +167,12 @@ export function Navigation() {
 
         {/* Mobile Menu */}
         {showMobileMenu && (
-          <div className="md:hidden border-t border-gray-200 py-4">
+          <div className="md:hidden border-t border-gray-200 py-4 mobile-menu">
             <div className="space-y-2">
               <Link
                 to="/feed"
                 onClick={() => setShowMobileMenu(false)}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
                   isActive('/feed')
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -174,7 +187,7 @@ export function Navigation() {
                   setShowExpertSearch(true)
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <Search className="h-4 w-4" />
                 <span>Поиск экспертов</span>
@@ -185,7 +198,7 @@ export function Navigation() {
                   setShowUserProfile(true)
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <Eye className="h-4 w-4" />
                 <span>Просмотр профиля</span>
@@ -196,7 +209,7 @@ export function Navigation() {
                   setShowProfileForm(true)
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <Edit3 className="h-4 w-4" />
                 <span>Редактировать профиль</span>
@@ -205,7 +218,7 @@ export function Navigation() {
               <Link
                 to="/dashboard"
                 onClick={() => setShowMobileMenu(false)}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <FileText className="h-4 w-4" />
                 <span>Мои статьи</span>
@@ -214,7 +227,7 @@ export function Navigation() {
               <Link
                 to="/friends"
                 onClick={() => setShowMobileMenu(false)}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <Users className="h-4 w-4" />
                 <span>Друзья</span>
@@ -225,7 +238,7 @@ export function Navigation() {
                   signOut()
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Выйти</span>
