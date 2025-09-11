@@ -140,18 +140,29 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   }
 
   const filteredExperts = experts.filter(expert => {
-    if (!searchTerm) return true
+    // Если нет поискового запроса и не выбраны фильтры, не показываем экспертов
+    if (!searchTerm && !selectedCategory && !selectedCity && !requestReason) {
+      return false
+    }
     
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      expert.full_name?.toLowerCase().includes(searchLower) ||
-      expert.bio?.toLowerCase().includes(searchLower) ||
-      expert.description?.toLowerCase().includes(searchLower) ||
-      expert.city?.toLowerCase().includes(searchLower) ||
-      expert.categories?.some(cat => 
-        cat.category.name.toLowerCase().includes(searchLower)
+    // Если есть поисковый запрос, проверяем по нему
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch = (
+        expert.full_name?.toLowerCase().includes(searchLower) ||
+        expert.bio?.toLowerCase().includes(searchLower) ||
+        expert.description?.toLowerCase().includes(searchLower) ||
+        expert.city?.toLowerCase().includes(searchLower) ||
+        expert.categories?.some(cat => 
+          cat.category.name.toLowerCase().includes(searchLower)
+        )
       )
-    )
+      
+      // Если есть поисковый запрос, но он не совпадает, не показываем
+      if (!matchesSearch) return false
+    }
+    
+    return true
   })
 
   const handleRequestExpert = async (expertId: string) => {
@@ -217,7 +228,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="input-field pl-10"
-                    placeholder="Имя, описание, город..."
+                    placeholder="Введите имя эксперта, описание или город..."
                   />
                 </div>
               </div>
@@ -306,10 +317,18 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
               </div>
             ) : filteredExperts.length === 0 ? (
               <div className="text-center py-12">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Эксперты не найдены</p>
+                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">
+                  {!searchTerm && !selectedCategory && !selectedCity && !requestReason
+                    ? 'Введите поисковый запрос или выберите фильтры для поиска экспертов'
+                    : 'Эксперты не найдены'
+                  }
+                </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Попробуйте изменить параметры поиска
+                  {!searchTerm && !selectedCategory && !selectedCity && !requestReason
+                    ? 'Используйте поисковую строку или фильтры слева'
+                    : 'Попробуйте изменить параметры поиска'
+                  }
                 </p>
               </div>
             ) : (
