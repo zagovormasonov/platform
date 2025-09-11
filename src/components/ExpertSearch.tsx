@@ -68,38 +68,71 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
     try {
       setLoading(true)
       
-      let query = supabase
-        .from('profiles')
-        .select(`
-          *,
-          categories:expert_categories(
-            category:categories(*)
-          )
-        `)
-        .eq('user_type', 'expert')
-        .not('city', 'is', null) // Только эксперты с указанным городом
-
-      // Фильтр по категории
+      let query
+      
+      // Если выбрана категория, используем JOIN через expert_categories
       if (selectedCategory) {
-        query = query.contains('categories', [{ category_id: selectedCategory }])
+        query = supabase
+          .from('expert_categories')
+          .select(`
+            expert:profiles!expert_categories_expert_id_fkey(
+              *,
+              categories:expert_categories(
+                category:categories(*)
+              )
+            )
+          `)
+          .eq('category_id', selectedCategory)
+          .eq('expert.user_type', 'expert')
+          .not('expert.city', 'is', null)
+      } else {
+        // Если категория не выбрана, загружаем всех экспертов
+        query = supabase
+          .from('profiles')
+          .select(`
+            *,
+            categories:expert_categories(
+              category:categories(*)
+            )
+          `)
+          .eq('user_type', 'expert')
+          .not('city', 'is', null)
       }
 
       // Фильтр по городу
       if (selectedCity) {
-        query = query.ilike('city', `%${selectedCity}%`)
+        if (selectedCategory) {
+          query = query.ilike('expert.city', `%${selectedCity}%`)
+        } else {
+          query = query.ilike('city', `%${selectedCity}%`)
+        }
       }
 
       // Сортировка
-      switch (sortBy) {
-        case 'rating':
-          query = query.order('rating', { ascending: false })
-          break
-        case 'newest':
-          query = query.order('created_at', { ascending: false })
-          break
-        case 'requests':
-          query = query.order('total_requests', { ascending: false })
-          break
+      if (selectedCategory) {
+        switch (sortBy) {
+          case 'rating':
+            query = query.order('expert.rating', { ascending: false })
+            break
+          case 'newest':
+            query = query.order('expert.created_at', { ascending: false })
+            break
+          case 'requests':
+            query = query.order('expert.total_requests', { ascending: false })
+            break
+        }
+      } else {
+        switch (sortBy) {
+          case 'rating':
+            query = query.order('rating', { ascending: false })
+            break
+          case 'newest':
+            query = query.order('created_at', { ascending: false })
+            break
+          case 'requests':
+            query = query.order('total_requests', { ascending: false })
+            break
+        }
       }
 
       const { data, error } = await query
@@ -109,10 +142,18 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
         return
       }
 
-      setExperts(data || [])
+      // Обрабатываем данные в зависимости от того, выбрана ли категория
+      let expertsData
+      if (selectedCategory) {
+        expertsData = data?.map(item => item.expert).filter(Boolean) || []
+      } else {
+        expertsData = data || []
+      }
+
+      setExperts(expertsData)
       
       // Собираем уникальные города
-      const uniqueCities = [...new Set(data?.map(expert => expert.city).filter(Boolean))]
+      const uniqueCities = [...new Set(expertsData?.map(expert => expert.city).filter(Boolean))]
       setCities(uniqueCities as string[])
     } catch (err) {
       console.error('Ошибка загрузки экспертов:', err)

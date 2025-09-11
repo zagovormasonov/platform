@@ -256,7 +256,7 @@ export function ExpertProfile({ expertId, onClose }: ExpertProfileProps) {
             {expert.bio && (
               <div className="mb-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">О себе</h4>
-                <p className="text-gray-700">{expert.bio}</p>
+                <p className="text-gray-700 leading-relaxed">{expert.bio}</p>
               </div>
             )}
 
@@ -264,7 +264,9 @@ export function ExpertProfile({ expertId, onClose }: ExpertProfileProps) {
             {expert.description && (
               <div className="mb-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-2">Описание услуг</h4>
-                <p className="text-gray-700 whitespace-pre-wrap">{expert.description}</p>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{expert.description}</p>
+                </div>
               </div>
             )}
 
@@ -272,50 +274,136 @@ export function ExpertProfile({ expertId, onClose }: ExpertProfileProps) {
             {expert.categories && expert.categories.length > 0 && (
               <div className="mb-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3">Направления деятельности</h4>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {expert.categories.map((cat, index) => (
-                    <span
+                    <div
                       key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      className="px-3 py-2 bg-blue-100 text-blue-800 text-sm rounded-lg border border-blue-200"
                     >
                       {cat.category.name}
-                    </span>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Service Types */}
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Типы консультаций</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg border-2 ${expert.accepts_online ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className="flex items-center space-x-2">
+                    <Globe className={`h-5 w-5 ${expert.accepts_online ? 'text-green-600' : 'text-gray-400'}`} />
+                    <span className={`font-medium ${expert.accepts_online ? 'text-green-800' : 'text-gray-500'}`}>
+                      Онлайн консультации
+                    </span>
+                  </div>
+                  <p className={`text-sm mt-1 ${expert.accepts_online ? 'text-green-700' : 'text-gray-500'}`}>
+                    {expert.accepts_online ? 'Доступны консультации по видеосвязи' : 'Не предоставляет онлайн консультации'}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-lg border-2 ${expert.accepts_offline ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className={`h-5 w-5 ${expert.accepts_offline ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className={`font-medium ${expert.accepts_offline ? 'text-blue-800' : 'text-gray-500'}`}>
+                      Оффлайн встречи
+                    </span>
+                  </div>
+                  <p className={`text-sm mt-1 ${expert.accepts_offline ? 'text-blue-700' : 'text-gray-500'}`}>
+                    {expert.accepts_offline ? 'Доступны личные встречи' : 'Не проводит личные встречи'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Statistics */}
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Статистика</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-900">{expert.rating.toFixed(1)}</div>
+                  <div className="text-sm text-gray-600">Рейтинг</div>
+                  <div className="flex justify-center mt-1">
+                    {renderStars(expert.rating)}
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-900">{expert.total_reviews}</div>
+                  <div className="text-sm text-gray-600">Отзывов</div>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <div className="text-2xl font-bold text-gray-900">{expert.total_requests}</div>
+                  <div className="text-sm text-gray-600">Заявок</div>
+                </div>
+              </div>
+            </div>
+
             {/* Contact Info */}
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-gray-900 mb-3">Контакты</h4>
-              <div className="space-y-2">
-                {expert.phone && (
-                  <div className="flex items-center space-x-2 text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    <span>{expert.phone}</span>
+              <div className="space-y-3">
+                {expert.phone ? (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <Phone className="h-5 w-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Телефон</div>
+                      <div className="text-gray-600">{expert.phone}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <div className="font-medium text-gray-500">Телефон</div>
+                      <div className="text-gray-400">Не указан</div>
+                    </div>
                   </div>
                 )}
-                {expert.website_url && (
+                
+                {expert.website_url ? (
                   <a
                     href={expert.website_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <Globe className="h-4 w-4" />
-                    <span>Веб-сайт</span>
+                    <Globe className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <div className="font-medium text-blue-900">Веб-сайт</div>
+                      <div className="text-blue-600 text-sm">{expert.website_url}</div>
+                    </div>
                   </a>
+                ) : (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <Globe className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <div className="font-medium text-gray-500">Веб-сайт</div>
+                      <div className="text-gray-400">Не указан</div>
+                    </div>
+                  </div>
                 )}
-                {expert.telegram_url && (
+                
+                {expert.telegram_url ? (
                   <a
                     href={expert.telegram_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                    className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <MessageCircle className="h-4 w-4" />
-                    <span>Telegram</span>
+                    <MessageCircle className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <div className="font-medium text-blue-900">Telegram</div>
+                      <div className="text-blue-600 text-sm">{expert.telegram_url}</div>
+                    </div>
                   </a>
+                ) : (
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <MessageCircle className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <div className="font-medium text-gray-500">Telegram</div>
+                      <div className="text-gray-400">Не указан</div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
