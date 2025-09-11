@@ -68,71 +68,34 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
     try {
       setLoading(true)
       
-      let query
-      
-      // Если выбрана категория, используем JOIN через expert_categories
-      if (selectedCategory) {
-        query = supabase
-          .from('expert_categories')
-          .select(`
-            expert:profiles!expert_categories_expert_id_fkey(
-              *,
-              categories:expert_categories(
-                category:categories(*)
-              )
-            )
-          `)
-          .eq('category_id', selectedCategory)
-          .eq('expert.user_type', 'expert')
-          .not('expert.city', 'is', null)
-      } else {
-        // Если категория не выбрана, загружаем всех экспертов
-        query = supabase
-          .from('profiles')
-          .select(`
-            *,
-            categories:expert_categories(
-              category:categories(*)
-            )
-          `)
-          .eq('user_type', 'expert')
-          .not('city', 'is', null)
-      }
+      // Всегда загружаем всех экспертов с их категориями
+      let query = supabase
+        .from('profiles')
+        .select(`
+          *,
+          categories:expert_categories(
+            category:categories(*)
+          )
+        `)
+        .eq('user_type', 'expert')
+        .not('city', 'is', null)
 
       // Фильтр по городу
       if (selectedCity) {
-        if (selectedCategory) {
-          query = query.ilike('expert.city', `%${selectedCity}%`)
-        } else {
-          query = query.ilike('city', `%${selectedCity}%`)
-        }
+        query = query.ilike('city', `%${selectedCity}%`)
       }
 
       // Сортировка
-      if (selectedCategory) {
-        switch (sortBy) {
-          case 'rating':
-            query = query.order('expert.rating', { ascending: false })
-            break
-          case 'newest':
-            query = query.order('expert.created_at', { ascending: false })
-            break
-          case 'requests':
-            query = query.order('expert.total_requests', { ascending: false })
-            break
-        }
-      } else {
-        switch (sortBy) {
-          case 'rating':
-            query = query.order('rating', { ascending: false })
-            break
-          case 'newest':
-            query = query.order('created_at', { ascending: false })
-            break
-          case 'requests':
-            query = query.order('total_requests', { ascending: false })
-            break
-        }
+      switch (sortBy) {
+        case 'rating':
+          query = query.order('rating', { ascending: false })
+          break
+        case 'newest':
+          query = query.order('created_at', { ascending: false })
+          break
+        case 'requests':
+          query = query.order('total_requests', { ascending: false })
+          break
       }
 
       const { data, error } = await query
@@ -142,18 +105,10 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
         return
       }
 
-      // Обрабатываем данные в зависимости от того, выбрана ли категория
-      let expertsData
-      if (selectedCategory) {
-        expertsData = data?.map(item => item.expert).filter(Boolean) || []
-      } else {
-        expertsData = data || []
-      }
-
-      setExperts(expertsData)
+      setExperts(data || [])
       
       // Собираем уникальные города
-      const uniqueCities = [...new Set(expertsData?.map(expert => expert.city).filter(Boolean))]
+      const uniqueCities = [...new Set(data?.map(expert => expert.city).filter(Boolean))]
       setCities(uniqueCities as string[])
     } catch (err) {
       console.error('Ошибка загрузки экспертов:', err)
@@ -201,6 +156,14 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       
       // Если есть поисковый запрос, но он не совпадает, не показываем
       if (!matchesSearch) return false
+    }
+    
+    // Дополнительная проверка: если выбрана категория, убеждаемся что эксперт действительно работает в этой области
+    if (selectedCategory) {
+      const hasSelectedCategory = expert.categories?.some(cat => cat.category.id === selectedCategory)
+      if (!hasSelectedCategory) {
+        return false
+      }
     }
     
     return true
