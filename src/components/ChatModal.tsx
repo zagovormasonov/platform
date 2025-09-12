@@ -60,7 +60,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [sending, setSending] = useState(false)
   const [realtimeStatus, setRealtimeStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown')
   const [scrollPosition, setScrollPosition] = useState<number>(0)
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
+  const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -101,36 +101,40 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const saveScrollPosition = () => {
-    const messagesContainer = document.getElementById('messages-container')
-    if (messagesContainer) {
-      setScrollPosition(messagesContainer.scrollTop)
-    }
-  }
-
-  const restoreScrollPosition = () => {
-    const messagesContainer = document.getElementById('messages-container')
-    if (messagesContainer && !isUserScrolling) {
-      messagesContainer.scrollTop = scrollPosition
-    }
-  }
-
   const handleScroll = () => {
     const messagesContainer = document.getElementById('messages-container')
     if (messagesContainer) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainer
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
       
-      setIsUserScrolling(!isAtBottom)
-      setScrollPosition(scrollTop)
+      // Если пользователь не внизу, сохраняем позицию для следующего обновления
+      if (!isAtBottom) {
+        setScrollPosition(scrollTop)
+        setShouldPreserveScroll(true)
+      } else {
+        setShouldPreserveScroll(false)
+      }
+    }
+  }
+
+  const restoreScrollIfNeeded = () => {
+    if (shouldPreserveScroll) {
+      const messagesContainer = document.getElementById('messages-container')
+      if (messagesContainer) {
+        messagesContainer.scrollTop = scrollPosition
+        setShouldPreserveScroll(false)
+      }
     }
   }
 
   useEffect(() => {
-    if (!isUserScrolling) {
+    // Автоматическая прокрутка только если пользователь был внизу
+    if (!shouldPreserveScroll) {
       scrollToBottom()
+    } else {
+      restoreScrollIfNeeded()
     }
-  }, [messages, isUserScrolling])
+  }, [messages])
 
   const fetchChats = async () => {
     if (!user) return
@@ -165,9 +169,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const fetchMessages = async (chatId: string) => {
     console.log('Загрузка сообщений для чата:', chatId)
     
-    // Сохраняем текущую позицию скролла
-    saveScrollPosition()
-    
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -186,11 +187,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       console.log('Загружены сообщения:', data)
       setMessages(data || [])
-      
-      // Восстанавливаем позицию скролла после небольшой задержки
-      setTimeout(() => {
-        restoreScrollPosition()
-      }, 50)
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
       alert('Произошла ошибка при загрузке сообщений')
@@ -217,28 +213,12 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
           console.log('📨 Получено новое сообщение через Realtime:', payload)
           const newMessage = payload.new as Message
           
-          // Проверяем, находимся ли мы внизу чата
-          const messagesContainer = document.getElementById('messages-container')
-          const isAtBottom = messagesContainer ? 
-            messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 50 : 
-            true
-          
           // Добавляем новое сообщение в список
           setMessages(prev => {
             const updated = [...prev, newMessage]
             console.log('📝 Обновляем список сообщений:', updated)
             return updated
           })
-          
-          // Прокручиваем к новому сообщению только если пользователь был внизу
-          if (isAtBottom) {
-            setTimeout(() => {
-              const messagesContainer = document.getElementById('messages-container')
-              if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight
-              }
-            }, 100)
-          }
           
           fetchChats() // Обновляем список чатов
         }
