@@ -239,9 +239,9 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b flex-shrink-0">
           <div>
             <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
               Поиск экспертов
@@ -260,7 +260,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row h-[calc(100%-80px)]">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0">
           {/* Filters Sidebar */}
           <div className="w-full lg:w-80 border-r bg-gray-50 p-4 sm:p-6 overflow-y-auto">
             <div className="space-y-6">
