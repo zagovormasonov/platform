@@ -134,6 +134,14 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       console.log('Загружены сообщения:', data)
       setMessages(data || [])
+      
+      // Прокручиваем к последнему сообщению
+      setTimeout(() => {
+        const messagesContainer = document.getElementById('messages-container')
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight
+        }
+      }, 50)
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
       alert('Произошла ошибка при загрузке сообщений')
@@ -155,11 +163,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
         },
         (payload) => {
           console.log('Получено новое сообщение через Realtime:', payload)
-          const newMessage = payload.new as Message
-          setMessages(prev => {
-            console.log('Обновляем список сообщений:', [...prev, newMessage])
-            return [...prev, newMessage]
-          })
+          // Принудительно перезагружаем все сообщения для корректного отображения
+          fetchMessages(chatId)
           fetchChats() // Обновляем список чатов
         }
       )
@@ -231,6 +236,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       console.log('Сообщение отправлено успешно:', data)
       setNewMessage('')
+      
+      // Принудительно обновляем сообщения после отправки с небольшой задержкой
+      setTimeout(async () => {
+        await fetchMessages(currentChatId)
+      }, 100)
     } catch (err) {
       console.error('Ошибка отправки сообщения:', err)
       alert('Произошла ошибка при отправке сообщения')
@@ -376,7 +386,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div id="messages-container" className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
