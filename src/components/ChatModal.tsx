@@ -182,12 +182,14 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const updateUnreadCount = () => {
     if (!user || !onUnreadCountUpdate) return
 
-    // Подсчитываем чаты с непрочитанными сообщениями
+    // Подсчитываем все сообщения от других пользователей во всех чатах
     let unreadCount = 0
     chats.forEach(chat => {
-      if (chat.last_message && chat.last_message.sender_id !== user.id) {
-        unreadCount++
-      }
+      // Получаем все сообщения в чате от других пользователей
+      const unreadMessages = messages.filter(message => 
+        message.chat_id === chat.id && message.sender_id !== user.id
+      )
+      unreadCount += unreadMessages.length
     })
 
     onUnreadCountUpdate(unreadCount)
@@ -195,7 +197,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
 
   useEffect(() => {
     updateUnreadCount()
-  }, [chats, user, onUnreadCountUpdate])
+  }, [chats, messages, user, onUnreadCountUpdate])
 
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')

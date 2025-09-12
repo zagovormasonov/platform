@@ -68,7 +68,7 @@ export function Navigation() {
           // Получаем все чаты пользователя
           const { data: chats, error: chatsError } = await supabase
             .from('chats')
-            .select('id, last_message_id')
+            .select('id')
             .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
 
           if (chatsError) {
@@ -81,24 +81,20 @@ export function Navigation() {
             return
           }
 
-          // Получаем последние сообщения для каждого чата
-          let totalUnread = 0
-          for (const chat of chats) {
-            if (chat.last_message_id) {
-              const { data: lastMessage, error: messageError } = await supabase
-                .from('messages')
-                .select('sender_id, created_at')
-                .eq('id', chat.last_message_id)
-                .single()
+          // Получаем все сообщения от других пользователей во всех чатах
+          const chatIds = chats.map(chat => chat.id)
+          const { data: messages, error: messagesError } = await supabase
+            .from('messages')
+            .select('id')
+            .in('chat_id', chatIds)
+            .neq('sender_id', user.id) // Только сообщения от других пользователей
 
-              if (!messageError && lastMessage && lastMessage.sender_id !== user.id) {
-                // Это сообщение от другого пользователя - считаем непрочитанным
-                totalUnread++
-              }
-            }
+          if (messagesError) {
+            console.error('Ошибка загрузки сообщений:', messagesError)
+            return
           }
 
-          setUnreadCount(totalUnread)
+          setUnreadCount(messages?.length || 0)
         } catch (err) {
           console.error('Ошибка подсчета непрочитанных сообщений:', err)
         }
