@@ -9,9 +9,7 @@ interface Chat {
   participant_2: string
   created_at: string
   updated_at: string
-  last_message_at: string
-  last_message_text: string | null
-  last_message_sender_id: string | null
+  last_message_id: string | null
   participant_1_profile?: {
     id: string
     full_name: string | null
@@ -21,6 +19,12 @@ interface Chat {
     id: string
     full_name: string | null
     avatar_url: string | null
+  }
+  last_message?: {
+    id: string
+    content: string
+    created_at: string
+    sender_id: string
   }
 }
 
@@ -109,16 +113,18 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
         .select(`
           *,
           participant_1_profile:profiles!chats_participant_1_fkey(id, full_name, avatar_url),
-          participant_2_profile:profiles!chats_participant_2_fkey(id, full_name, avatar_url)
+          participant_2_profile:profiles!chats_participant_2_fkey(id, full_name, avatar_url),
+          last_message:messages!chats_last_message_id_fkey(id, content, created_at, sender_id)
         `)
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-        .order('last_message_at', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       if (error) {
         console.error('Ошибка загрузки чатов:', error)
         return
       }
 
+      console.log('Загружены чаты с последними сообщениями:', data)
       setChats(data || [])
     } catch (err) {
       console.error('Ошибка загрузки чатов:', err)
@@ -306,6 +312,12 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     return chat.participant_1 === user.id ? chat.participant_2_profile : chat.participant_1_profile
   }
 
+  const getCurrentChatPartner = () => {
+    if (!currentChatId || !user) return null
+    const currentChat = chats.find(c => c.id === currentChatId)
+    return currentChat ? getChatPartner(currentChat) : null
+  }
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -388,11 +400,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                                 {partner.full_name || 'Пользователь'}
                               </h4>
                               <p className="text-sm text-gray-500 truncate">
-                                {chat.last_message_text || 'Нет сообщений'}
+                                {chat.last_message?.content || 'Нет сообщений'}
                               </p>
                             </div>
                             <div className="text-xs text-gray-400">
-                              {formatTime(chat.last_message_at)}
+                              {chat.last_message ? formatTime(chat.last_message.created_at) : formatTime(chat.created_at)}
                             </div>
                           </div>
                         </div>
@@ -413,16 +425,24 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => setActiveTab('chats')}
-                      className="md:hidden p-2 text-gray-600 hover:text-gray-800"
+                      className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
                     >
                       ← Назад
                     </button>
-                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-gray-400" />
+                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                      {getCurrentChatPartner()?.avatar_url ? (
+                        <img
+                          src={getCurrentChatPartner()?.avatar_url || ''}
+                          alt={getCurrentChatPartner()?.full_name || 'Пользователь'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900">
-                        {recipientName || 'Пользователь'}
+                        {getCurrentChatPartner()?.full_name || recipientName || 'Пользователь'}
                       </h3>
                       <p className="text-sm text-gray-500">
                         {realtimeStatus === 'connected' ? '🟢 Realtime активен' : 
@@ -439,8 +459,23 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end space-x-2 ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
+                    {/* Аватар для сообщений от других пользователей */}
+                    {message.sender_id !== user?.id && (
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {message.sender_profile?.avatar_url ? (
+                          <img
+                            src={message.sender_profile.avatar_url}
+                            alt={message.sender_profile.full_name || 'Пользователь'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                    )}
+                    
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.sender_id === user?.id
