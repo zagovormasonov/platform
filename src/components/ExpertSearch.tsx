@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X, Eye } from 'lucide-react'
+import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X, Eye, ChevronUp, ChevronDown } from 'lucide-react'
 import { ExpertProfile } from './ExpertProfile'
 
 interface Expert {
@@ -46,6 +46,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [requestReason, setRequestReason] = useState('')
   const [cities, setCities] = useState<string[]>([])
   const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   const requestReasons = [
     'здоровье',
@@ -65,6 +66,25 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   useEffect(() => {
     fetchExperts()
   }, [selectedCategory, selectedCity, sortBy])
+
+  // Функции для скроллинга
+  const scrollToTop = () => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  const scrollToBottom = () => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollTo({
+        top: resultsRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   const fetchExperts = async () => {
     try {
@@ -171,6 +191,21 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
     return true
   })
 
+  // Автоматический скроллинг при изменении результатов
+  useEffect(() => {
+    if (resultsRef.current && filteredExperts.length > 0) {
+      // Небольшая задержка для корректного рендеринга
+      setTimeout(() => {
+        if (resultsRef.current) {
+          resultsRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    }
+  }, [filteredExperts])
+
   const handleRequestExpert = async (expertId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -207,9 +242,16 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
-            Поиск экспертов
-          </h2>
+          <div>
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+              Поиск экспертов
+            </h2>
+            {!loading && filteredExperts.length > 0 && (
+              <p className="text-sm text-gray-600 mt-1">
+                Найдено экспертов: {filteredExperts.length}
+              </p>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -315,7 +357,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </div>
 
           {/* Results */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto min-h-0">
+          <div ref={resultsRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-h-0">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -463,6 +505,26 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* Кнопки скроллинга */}
+            {!loading && filteredExperts.length > 3 && (
+              <div className="flex justify-center space-x-4 mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={scrollToTop}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                  <span>В начало</span>
+                </button>
+                <button
+                  onClick={scrollToBottom}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  <span>В конец</span>
+                </button>
               </div>
             )}
           </div>
