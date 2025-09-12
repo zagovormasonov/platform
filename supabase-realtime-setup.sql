@@ -6,15 +6,56 @@ FROM information_schema.tables
 WHERE table_schema = 'public' 
 AND table_name IN ('chats', 'messages')
 ORDER BY table_name;
-SELECT 
-    schemaname,
-    tablename,
-    rowsecurity,
-    hasrules
-FROM pg_tables 
-WHERE tablename = 'messages';
 
--- 1.1. Альтернативная проверка RLS для таблицы messages
+-- 0.1. Проверяем структуру таблицы chats
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'chats' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+-- 0.2. Добавляем колонку last_message_id в таблицу chats (если не существует)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'chats' 
+        AND column_name = 'last_message_id'
+        AND table_schema = 'public'
+    ) THEN
+        ALTER TABLE chats ADD COLUMN last_message_id UUID REFERENCES messages(id);
+        RAISE NOTICE 'Колонка last_message_id добавлена в таблицу chats';
+    ELSE
+        RAISE NOTICE 'Колонка last_message_id уже существует в таблице chats';
+    END IF;
+-- 0.3. Добавляем колонку updated_at в таблицу chats (если не существует)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'chats' 
+        AND column_name = 'updated_at'
+        AND table_schema = 'public'
+    ) THEN
+        ALTER TABLE chats ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+        RAISE NOTICE 'Колонка updated_at добавлена в таблицу chats';
+    ELSE
+        RAISE NOTICE 'Колонка updated_at уже существует в таблице chats';
+    END IF;
+-- 0.4. Проверяем структуру таблицы messages
+SELECT 
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'messages' 
+AND table_schema = 'public'
+ORDER BY ordinal_position;
 SELECT 
     c.relname as table_name,
     c.relrowsecurity as rls_enabled,

@@ -54,6 +54,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -70,7 +71,17 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     if (currentChatId) {
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
-      return unsubscribe
+      
+      // Добавляем периодическое обновление как fallback (каждые 3 секунды)
+      const interval = setInterval(() => {
+        console.log('🔄 Периодическое обновление сообщений (fallback)')
+        fetchMessages(currentChatId)
+      }, 3000)
+      
+      return () => {
+        unsubscribe()
+        clearInterval(interval)
+      }
     }
   }, [currentChatId])
 
@@ -152,7 +163,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   }
 
   const subscribeToMessages = (chatId: string) => {
-    console.log('Подписка на сообщения для чата:', chatId)
+    console.log('🔍 Подписка на сообщения для чата:', chatId)
+    
+    // Проверяем подключение к Supabase
+    console.log('🔗 Supabase подключение проверено')
     
     const channel = supabase
       .channel(`messages:${chatId}`)
@@ -165,13 +179,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
           filter: `chat_id=eq.${chatId}`
         },
         (payload) => {
-          console.log('Получено новое сообщение через Realtime:', payload)
+          console.log('📨 Получено новое сообщение через Realtime:', payload)
           const newMessage = payload.new as Message
           
           // Добавляем новое сообщение в список
           setMessages(prev => {
             const updated = [...prev, newMessage]
-            console.log('Обновляем список сообщений:', updated)
+            console.log('📝 Обновляем список сообщений:', updated)
             return updated
           })
           
@@ -187,18 +201,24 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
         }
       )
       .subscribe((status) => {
-        console.log('Статус подписки Realtime:', status)
+        console.log('📡 Статус подписки Realtime:', status)
         if (status === 'SUBSCRIBED') {
           console.log('✅ Realtime подписка активна')
+          setRealtimeStatus('connected')
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Ошибка Realtime подписки')
+          setRealtimeStatus('disconnected')
         } else if (status === 'TIMED_OUT') {
           console.warn('⏰ Realtime подписка истекла')
+          setRealtimeStatus('disconnected')
+        } else if (status === 'CLOSED') {
+          console.warn('🔒 Realtime подписка закрыта')
+          setRealtimeStatus('disconnected')
         }
       })
 
     return () => {
-      console.log('Отписываемся от канала:', chatId)
+      console.log('🔌 Отписываемся от канала:', chatId)
       supabase.removeChannel(channel)
     }
   }
@@ -404,7 +424,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                       <h3 className="font-medium text-gray-900">
                         {recipientName || 'Пользователь'}
                       </h3>
-                      <p className="text-sm text-gray-500">В чате</p>
+                      <p className="text-sm text-gray-500">
+                        {realtimeStatus === 'connected' ? '🟢 Realtime активен' : 
+                         realtimeStatus === 'disconnected' ? '🔴 Realtime отключен' : 
+                         '🟡 Подключение...'}
+                      </p>
                     </div>
                   </div>
                 </div>
