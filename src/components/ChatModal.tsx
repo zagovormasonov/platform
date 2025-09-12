@@ -61,6 +61,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [realtimeStatus, setRealtimeStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown')
   const [scrollPosition, setScrollPosition] = useState<number>(0)
   const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
+  const [isNewMessage, setIsNewMessage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -81,7 +82,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
       // Добавляем периодическое обновление как fallback (каждые 3 секунды)
       const interval = setInterval(() => {
         console.log('🔄 Периодическое обновление сообщений (fallback)')
-        fetchMessages(currentChatId)
+        fetchMessages(currentChatId, true) // Передаем флаг периодического обновления
       }, 3000)
       
       return () => {
@@ -128,9 +129,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   }
 
   useEffect(() => {
-    // Автоматическая прокрутка только если пользователь был внизу
-    if (!shouldPreserveScroll) {
+    // Автоматическая прокрутка только если это новое сообщение или пользователь был внизу
+    if (isNewMessage || !shouldPreserveScroll) {
       scrollToBottom()
+      setIsNewMessage(false) // Сбрасываем флаг после прокрутки
     } else {
       restoreScrollIfNeeded()
     }
@@ -166,8 +168,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     }
   }
 
-  const fetchMessages = async (chatId: string) => {
-    console.log('Загрузка сообщений для чата:', chatId)
+  const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
+    console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
     
     try {
       const { data, error } = await supabase
@@ -187,6 +189,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       console.log('Загружены сообщения:', data)
       setMessages(data || [])
+      
+      // Устанавливаем флаг нового сообщения только если это не периодическое обновление
+      if (!isPeriodicUpdate) {
+        setIsNewMessage(true)
+      }
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
       alert('Произошла ошибка при загрузке сообщений')
@@ -219,6 +226,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
             console.log('📝 Обновляем список сообщений:', updated)
             return updated
           })
+          
+          // Устанавливаем флаг нового сообщения для автоматической прокрутки
+          setIsNewMessage(true)
           
           fetchChats() // Обновляем список чатов
         }
