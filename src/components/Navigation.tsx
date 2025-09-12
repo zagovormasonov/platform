@@ -25,7 +25,7 @@ export function Navigation() {
   const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set())
+  const [lastViewedTimes, setLastViewedTimes] = useState<Map<string, string>>(new Map())
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -39,8 +39,8 @@ export function Navigation() {
     setUnreadCount(count)
   }
 
-  const updateViewedMessages = (viewedMessages: Set<string>) => {
-    setViewedMessages(viewedMessages)
+  const updateLastViewedTimes = (lastViewedTimes: Map<string, string>) => {
+    setLastViewedTimes(lastViewedTimes)
   }
 
   // Загрузка профиля пользователя
@@ -89,7 +89,7 @@ export function Navigation() {
           const chatIds = chats.map(chat => chat.id)
           const { data: messages, error: messagesError } = await supabase
             .from('messages')
-            .select('id')
+            .select('id, chat_id, created_at')
             .in('chat_id', chatIds)
             .neq('sender_id', user.id) // Только сообщения от других пользователей
 
@@ -102,7 +102,16 @@ export function Navigation() {
           let unreadCount = 0
           if (messages) {
             messages.forEach(message => {
-              if (!viewedMessages.has(message.id)) {
+              const lastViewedTime = lastViewedTimes.get(message.chat_id)
+              
+              // Если чат не был просмотрен, считаем сообщение непрочитанным
+              if (!lastViewedTime) {
+                unreadCount++
+                return
+              }
+              
+              // Считаем непрочитанным только если сообщение после последнего просмотра
+              if (new Date(message.created_at) > new Date(lastViewedTime)) {
                 unreadCount++
               }
             })
@@ -117,7 +126,7 @@ export function Navigation() {
 
     fetchUserProfile()
     fetchUnreadCount()
-  }, [user, viewedMessages])
+  }, [user, lastViewedTimes])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -414,7 +423,7 @@ export function Navigation() {
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           onUnreadCountUpdate={updateUnreadCount}
-          onViewedMessagesUpdate={updateViewedMessages}
+          onLastViewedTimesUpdate={updateLastViewedTimes}
         />
       )}
     </header>

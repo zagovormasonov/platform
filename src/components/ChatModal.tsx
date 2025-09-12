@@ -49,10 +49,10 @@ interface ChatModalProps {
   recipientId?: string
   recipientName?: string
   onUnreadCountUpdate?: (count: number) => void
-  onViewedMessagesUpdate?: (viewedMessages: Set<string>) => void
+  onLastViewedTimesUpdate?: (lastViewedTimes: Map<string, string>) => void
 }
 
-export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate, onViewedMessagesUpdate }: ChatModalProps) {
+export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate, onLastViewedTimesUpdate }: ChatModalProps) {
   const { user } = useAuth()
   const [chats, setChats] = useState<Chat[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -65,7 +65,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
   const [isNewMessage, setIsNewMessage] = useState(false)
   const [lastMessageCount, setLastMessageCount] = useState<number>(0)
-  const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set())
+  const [lastViewedTimes, setLastViewedTimes] = useState<Map<string, string>>(new Map())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -187,12 +187,24 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     // Подсчитываем все сообщения от других пользователей во всех чатах
     let unreadCount = 0
     chats.forEach(chat => {
+      // Получаем время последнего просмотра чата
+      const lastViewedTime = lastViewedTimes.get(chat.id)
+      
       // Получаем все сообщения в чате от других пользователей
-      const unreadMessages = messages.filter(message => 
-        message.chat_id === chat.id && 
-        message.sender_id !== user.id &&
-        !viewedMessages.has(message.id) // Не считаем просмотренные сообщения
-      )
+      const unreadMessages = messages.filter(message => {
+        if (message.chat_id !== chat.id || message.sender_id === user.id) {
+          return false
+        }
+        
+        // Если чат не был просмотрен, считаем все сообщения непрочитанными
+        if (!lastViewedTime) {
+          return true
+        }
+        
+        // Считаем непрочитанными только сообщения после последнего просмотра
+        return new Date(message.created_at) > new Date(lastViewedTime)
+      })
+      
       unreadCount += unreadMessages.length
     })
 
@@ -200,17 +212,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   }
 
   const markChatAsRead = (chatId: string) => {
-    // Отмечаем все сообщения в чате как просмотренные
-    const chatMessages = messages.filter(message => 
-      message.chat_id === chatId && message.sender_id !== user?.id
-    )
-    
-    const messageIds = chatMessages.map(message => message.id)
-    setViewedMessages(prev => {
-      const newSet = new Set(prev)
-      messageIds.forEach(id => newSet.add(id))
-      return newSet
-    })
+    // Записываем время просмотра чата
+    const now = new Date().toISOString()
+    setLastViewedTimes(prev => new Map(prev).set(chatId, now))
     
     // Обновляем счетчик
     updateUnreadCount()
@@ -218,13 +222,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
 
   useEffect(() => {
     updateUnreadCount()
-  }, [chats, messages, viewedMessages, user, onUnreadCountUpdate])
+  }, [chats, messages, lastViewedTimes, user, onUnreadCountUpdate])
 
   useEffect(() => {
-    if (onViewedMessagesUpdate) {
-      onViewedMessagesUpdate(viewedMessages)
+    if (onLastViewedTimesUpdate) {
+      onLastViewedTimesUpdate(lastViewedTimes)
     }
-  }, [viewedMessages, onViewedMessagesUpdate])
+  }, [lastViewedTimes, onLastViewedTimesUpdate])
 
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
