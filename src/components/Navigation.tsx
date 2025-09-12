@@ -5,6 +5,13 @@ import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
 import { UserProfile } from './UserProfile'
+import { supabase } from '../lib/supabase'
+
+interface UserProfile {
+  id: string
+  full_name: string | null
+  avatar_url: string | null
+}
 
 export function Navigation() {
   const { user, signOut } = useAuth()
@@ -14,10 +21,37 @@ export function Navigation() {
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   const isActive = (path: string) => {
     return location.pathname === path
   }
+
+  // Загрузка профиля пользователя
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .eq('id', user.id)
+            .single()
+
+          if (error) {
+            console.error('Ошибка загрузки профиля:', error)
+            return
+          }
+
+          setUserProfile(data)
+        } catch (err) {
+          console.error('Ошибка загрузки профиля:', err)
+        }
+      }
+    }
+
+    fetchUserProfile()
+  }, [user])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,7 +130,15 @@ export function Navigation() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
-                <User className="h-4 w-4" />
+                {userProfile?.avatar_url ? (
+                  <img
+                    src={userProfile.avatar_url}
+                    alt={userProfile.full_name || 'Пользователь'}
+                    className="h-6 w-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
                 <span>Мой профиль</span>
                 <ChevronDown className="h-4 w-4" />
               </button>

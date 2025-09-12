@@ -4,6 +4,7 @@ import { useRefresh } from '../contexts/RefreshContext'
 import { supabase } from '../lib/supabase'
 import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload, ChevronDown } from 'lucide-react'
 import { RUSSIAN_CITIES } from '../data/russianCities'
+import { ExpertServices } from './ExpertServices'
 
 interface Profile {
   id: string
@@ -663,6 +664,11 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
                   <p className="mt-1 text-xs text-gray-500">
                     Выберите направления, в которых вы работаете
                   </p>
+                </div>
+
+                {/* Expert Services */}
+                <div className="border-t border-gray-200 pt-6">
+                  <ExpertServices expertId={user?.id || ''} />
                 </div>
               </>
             )}
