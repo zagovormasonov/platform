@@ -47,6 +47,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [cities, setCities] = useState<string[]>([])
   const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
 
   const requestReasons = [
     'здоровье',
@@ -69,20 +70,24 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   // Функции для скроллинга
   const scrollToTop = () => {
-    if (resultsRef.current) {
-      resultsRef.current.scrollTo({
+    console.log('Manual scroll to top')
+    if (modalRef.current) {
+      modalRef.current.scrollTo({
         top: 0,
         behavior: 'smooth'
       })
+      console.log('Manually scrolled to top')
     }
   }
 
   const scrollToBottom = () => {
-    if (resultsRef.current) {
-      resultsRef.current.scrollTo({
-        top: resultsRef.current.scrollHeight,
+    console.log('Manual scroll to bottom')
+    if (modalRef.current) {
+      modalRef.current.scrollTo({
+        top: modalRef.current.scrollHeight,
         behavior: 'smooth'
       })
+      console.log('Manually scrolled to bottom')
     }
   }
 
@@ -193,14 +198,16 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   // Автоматический скроллинг при изменении результатов
   useEffect(() => {
-    if (resultsRef.current && filteredExperts.length > 0) {
+    if (modalRef.current && filteredExperts.length > 0) {
+      console.log('Auto-scrolling to top, filteredExperts.length:', filteredExperts.length)
       // Небольшая задержка для корректного рендеринга
       setTimeout(() => {
-        if (resultsRef.current) {
-          resultsRef.current.scrollTo({
+        if (modalRef.current) {
+          modalRef.current.scrollTo({
             top: 0,
             behavior: 'smooth'
           })
+          console.log('Scrolled to top')
         }
       }, 100)
     }
@@ -239,7 +246,11 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+      <div 
+        ref={modalRef}
+        className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
+        onScroll={() => console.log('Modal scrolled')}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b flex-shrink-0">
           <div>
@@ -260,9 +271,9 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row">
           {/* Filters Sidebar */}
-          <div className="w-full lg:w-80 border-r bg-gray-50 p-4 sm:p-6 overflow-y-auto">
+          <div className="w-full lg:w-80 border-r bg-gray-50 p-4 sm:p-6">
             <div className="space-y-6">
               {/* Search */}
               <div>
@@ -357,7 +368,10 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </div>
 
           {/* Results */}
-          <div ref={resultsRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-h-0">
+          <div 
+            ref={resultsRef} 
+            className="flex-1 p-4 sm:p-6"
+          >
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -509,7 +523,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
             )}
             
             {/* Кнопки скроллинга */}
-            {!loading && filteredExperts.length > 3 && (
+            {!loading && filteredExperts.length > 2 && (
               <div className="flex justify-center space-x-4 mt-6 pt-4 border-t border-gray-200">
                 <button
                   onClick={scrollToTop}
