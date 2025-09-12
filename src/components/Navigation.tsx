@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
 import { UserProfile } from './UserProfile'
+import { ChatModal } from './ChatModal'
 import { supabase } from '../lib/supabase'
 
 interface UserProfile {
@@ -21,6 +22,7 @@ export function Navigation() {
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   const isActive = (path: string) => {
@@ -121,6 +123,14 @@ export function Navigation() {
                 title="Поиск экспертов"
               >
                 <Search className="h-5 w-5" />
+              </button>
+              
+              <button
+                onClick={() => setShowChat(true)}
+                className="p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
+                title="Чаты"
+              >
+                <MessageCircle className="h-5 w-5" />
               </button>
             </nav>
             
@@ -243,6 +253,17 @@ export function Navigation() {
               
               <button
                 onClick={() => {
+                  setShowChat(true)
+                  setShowMobileMenu(false)
+                }}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Чаты</span>
+              </button>
+              
+              <button
+                onClick={() => {
                   console.log('Mobile menu: Opening UserProfile')
                   setShowUserProfile(true)
                   setShowMobileMenu(false)
@@ -311,6 +332,13 @@ export function Navigation() {
         <UserProfile 
           userId={user.id} 
           onClose={() => setShowUserProfile(false)} 
+        />
+      )}
+      
+      {showChat && (
+        <ChatModal
+          isOpen={showChat}
+          onClose={() => setShowChat(false)}
         />
       )}
     </header>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import { X, User, Mail, MapPin, Phone, Globe, MessageCircle, Star, Users, Calendar, Award } from 'lucide-react'
 import { ReviewsInline } from './ReviewsInline'
+import { ChatButton } from './ChatButton'
 
 interface UserProfileProps {
   userId: string
@@ -53,6 +55,7 @@ interface Service {
 
 export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
   const handleClose = onClose || onBack || (() => {})
+  const { user } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
@@ -249,6 +252,17 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                 </div>
               </div>
             </div>
+
+            {/* Chat Button */}
+            {user && user.id !== profile.id && (
+              <div className="flex justify-center mb-6">
+                <ChatButton
+                  recipientId={profile.id}
+                  recipientName={profile.full_name || 'Пользователь'}
+                  className="w-full sm:w-auto"
+                />
+              </div>
+            )}
 
             {/* Expert-specific sections */}
             {isExpert && (
