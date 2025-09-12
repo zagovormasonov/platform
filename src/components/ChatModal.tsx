@@ -62,6 +62,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [scrollPosition, setScrollPosition] = useState<number>(0)
   const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
   const [isNewMessage, setIsNewMessage] = useState(false)
+  const [lastMessageCount, setLastMessageCount] = useState<number>(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -79,11 +80,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
       
-      // Добавляем периодическое обновление как fallback (каждые 3 секунды)
+      // Добавляем периодическое обновление как fallback (каждые 10 секунд)
       const interval = setInterval(() => {
         console.log('🔄 Периодическое обновление сообщений (fallback)')
         fetchMessages(currentChatId, true) // Передаем флаг периодического обновления
-      }, 3000)
+      }, 10000)
       
       return () => {
         unsubscribe()
@@ -106,14 +107,16 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     const messagesContainer = document.getElementById('messages-container')
     if (messagesContainer) {
       const { scrollTop, scrollHeight, clientHeight } = messagesContainer
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50 // Уменьшили порог
       
       // Если пользователь не внизу, сохраняем позицию для следующего обновления
       if (!isAtBottom) {
         setScrollPosition(scrollTop)
         setShouldPreserveScroll(true)
+        console.log('📍 Пользователь листает чат, сохраняем позицию:', scrollTop)
       } else {
         setShouldPreserveScroll(false)
+        console.log('📍 Пользователь внизу чата')
       }
     }
   }
@@ -122,18 +125,25 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     if (shouldPreserveScroll) {
       const messagesContainer = document.getElementById('messages-container')
       if (messagesContainer) {
-        messagesContainer.scrollTop = scrollPosition
-        setShouldPreserveScroll(false)
+        // Проверяем, что пользователь действительно не внизу
+        const { scrollTop, scrollHeight, clientHeight } = messagesContainer
+        const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+        
+        if (!isAtBottom) {
+          messagesContainer.scrollTop = scrollPosition
+          setShouldPreserveScroll(false)
+        }
       }
     }
   }
 
   useEffect(() => {
-    // Автоматическая прокрутка только если это новое сообщение или пользователь был внизу
-    if (isNewMessage || !shouldPreserveScroll) {
+    // Автоматическая прокрутка только если это новое сообщение
+    if (isNewMessage) {
       scrollToBottom()
       setIsNewMessage(false) // Сбрасываем флаг после прокрутки
-    } else {
+    } else if (!shouldPreserveScroll) {
+      // Если пользователь был внизу, но это не новое сообщение - восстанавливаем позицию
       restoreScrollIfNeeded()
     }
   }, [messages])
@@ -187,8 +197,17 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
         return
       }
 
+      const newMessageCount = data?.length || 0
+      
+      // При периодическом обновлении проверяем, есть ли изменения
+      if (isPeriodicUpdate && newMessageCount === lastMessageCount) {
+        console.log('🔄 Нет новых сообщений, пропускаем обновление')
+        return
+      }
+
       console.log('Загружены сообщения:', data)
       setMessages(data || [])
+      setLastMessageCount(newMessageCount)
       
       // Устанавливаем флаг нового сообщения только если это не периодическое обновление
       if (!isPeriodicUpdate) {
@@ -224,6 +243,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
           setMessages(prev => {
             const updated = [...prev, newMessage]
             console.log('📝 Обновляем список сообщений:', updated)
+            setLastMessageCount(updated.length) // Обновляем счетчик
             return updated
           })
           
