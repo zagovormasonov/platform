@@ -25,10 +25,12 @@ export function Navigation() {
       const target = event.target as HTMLElement
       
       if (showProfileMenu && !target.closest('.profile-dropdown')) {
+        console.log('Closing profile menu due to outside click')
         setShowProfileMenu(false)
       }
       
       if (showMobileMenu && !target.closest('.mobile-menu')) {
+        console.log('Closing mobile menu due to outside click')
         setShowMobileMenu(false)
       }
     }
@@ -157,7 +159,10 @@ export function Navigation() {
           {/* Mobile Menu Button */}
           <div className="md:hidden mobile-menu">
             <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              onClick={() => {
+                console.log('Mobile menu button clicked, current state:', showMobileMenu)
+                setShowMobileMenu(!showMobileMenu)
+              }}
               className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               {showMobileMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -184,6 +189,7 @@ export function Navigation() {
               
               <button
                 onClick={() => {
+                  console.log('Mobile menu: Opening ExpertSearch')
                   setShowExpertSearch(true)
                   setShowMobileMenu(false)
                 }}
@@ -195,6 +201,7 @@ export function Navigation() {
               
               <button
                 onClick={() => {
+                  console.log('Mobile menu: Opening UserProfile')
                   setShowUserProfile(true)
                   setShowMobileMenu(false)
                 }}
@@ -206,6 +213,7 @@ export function Navigation() {
               
               <button
                 onClick={() => {
+                  console.log('Mobile menu: Opening ProfileForm')
                   setShowProfileForm(true)
                   setShowMobileMenu(false)
                 }}

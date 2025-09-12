@@ -33,7 +33,7 @@ interface Profile {
   created_at: string
   categories?: Array<{
     category: {
-      id: string
+  id: string
       name: string
       description: string
     }
@@ -54,7 +54,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
     try {
       setLoading(true)
       setError('')
-
+      
       let query = supabase
         .from('profiles')
         .select(`
@@ -117,12 +117,12 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
             </button>
           </div>
           <p className="text-gray-600 mb-4">{error || 'Профиль не найден'}</p>
-          <button
+            <button
             onClick={handleClose}
             className="w-full btn-primary"
-          >
+            >
             Закрыть
-          </button>
+            </button>
         </div>
       </div>
     )
@@ -131,46 +131,46 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
   const isExpert = profile.user_type === 'expert'
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
             Профиль {isExpert ? 'эксперта' : 'пользователя'}
           </h2>
-          <button
+            <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+            >
             <X className="h-6 w-6" />
-          </button>
+            </button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-          <div className="p-6">
+        <div className="overflow-y-auto max-h-[calc(95vh-80px)] sm:max-h-[calc(90vh-80px)]">
+          <div className="p-4 sm:p-6">
             {/* Profile Header */}
-            <div className="flex items-start space-x-6 mb-8">
-              {/* Avatar */}
-              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 mb-6 sm:mb-8">
+            {/* Avatar */}
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt="Аватар"
-                    className="w-24 h-24 object-cover"
+                    className="w-20 h-20 sm:w-24 sm:h-24 object-cover"
                   />
                 ) : (
-                  <User className="h-12 w-12 text-gray-400" />
+                  <User className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400" />
                 )}
-              </div>
+            </div>
 
               {/* Basic Info */}
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="flex-1">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center sm:text-left">
                   {profile.full_name || 'Без имени'}
                 </h3>
                 
-                <div className="flex items-center space-x-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0 mb-4">
                   <div className="flex items-center space-x-1 text-gray-600">
                     <Mail className="h-4 w-4" />
                     <span className="text-sm">{profile.email}</span>
@@ -245,7 +245,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                     <div className="flex items-center space-x-2 mb-2">
                       <Globe className="h-5 w-5 text-blue-600" />
                       <span className="font-semibold text-blue-800">Консультации</span>
-                    </div>
+                        </div>
                     <div className="space-y-1">
                       {profile.accepts_online && (
                         <div className="text-sm text-blue-700">✓ Онлайн</div>
@@ -290,14 +290,14 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                       <p className="text-gray-700 whitespace-pre-wrap">
                         {profile.description}
                       </p>
-                    </div>
-                  </div>
+                </div>
+              </div>
                 )}
               </>
             )}
 
-            {/* Bio */}
-            {profile.bio && (
+              {/* Bio */}
+              {profile.bio && (
               <div className="mb-8">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">О себе</h4>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -324,8 +324,8 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                         {profile.phone}
                       </a>
                     </div>
-                  </div>
-                )}
+                </div>
+              )}
 
                 {profile.website_url && (
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
@@ -341,8 +341,8 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                         {profile.website_url}
                       </a>
                     </div>
-                  </div>
-                )}
+                </div>
+              )}
 
                 {profile.telegram_url && (
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
@@ -360,15 +360,15 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                     </div>
                   </div>
                 )}
-              </div>
+                </div>
             </div>
 
             {/* Reviews (only for experts) */}
             {isExpert && (
               <div>
                 <ReviewsInline expertId={profile.id} />
-              </div>
-            )}
+            </div>
+          )}
           </div>
         </div>
       </div>

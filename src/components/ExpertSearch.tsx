@@ -218,7 +218,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row h-full">
+        <div className="flex flex-col lg:flex-row h-[calc(100%-80px)]">
           {/* Filters Sidebar */}
           <div className="w-full lg:w-80 border-r bg-gray-50 p-4 sm:p-6 overflow-y-auto">
             <div className="space-y-6">
@@ -315,7 +315,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           </div>
 
           {/* Results */}
-          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto min-h-0">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
