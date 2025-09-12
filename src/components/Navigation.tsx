@@ -27,6 +27,29 @@ export function Navigation() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [lastViewedTimes, setLastViewedTimes] = useState<Map<string, string>>(new Map())
 
+  // Загружаем время последнего просмотра из localStorage при инициализации
+  useEffect(() => {
+    if (user) {
+      const savedTimes = localStorage.getItem(`lastViewedTimes_${user.id}`)
+      if (savedTimes) {
+        try {
+          const parsedTimes = JSON.parse(savedTimes)
+          setLastViewedTimes(new Map(Object.entries(parsedTimes)))
+        } catch (err) {
+          console.error('Ошибка загрузки времени просмотра из localStorage:', err)
+        }
+      }
+    }
+  }, [user])
+
+  // Сохраняем время последнего просмотра в localStorage при изменении
+  useEffect(() => {
+    if (user && lastViewedTimes.size > 0) {
+      const timesObject = Object.fromEntries(lastViewedTimes)
+      localStorage.setItem(`lastViewedTimes_${user.id}`, JSON.stringify(timesObject))
+    }
+  }, [lastViewedTimes, user])
+
   const isActive = (path: string) => {
     return location.pathname === path
   }
@@ -41,6 +64,12 @@ export function Navigation() {
 
   const updateLastViewedTimes = (lastViewedTimes: Map<string, string>) => {
     setLastViewedTimes(lastViewedTimes)
+    
+    // Также сохраняем в localStorage
+    if (user) {
+      const timesObject = Object.fromEntries(lastViewedTimes)
+      localStorage.setItem(`lastViewedTimes_${user.id}`, JSON.stringify(timesObject))
+    }
   }
 
   // Загрузка профиля пользователя

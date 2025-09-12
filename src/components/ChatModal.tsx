@@ -69,6 +69,29 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
+  // Загружаем время последнего просмотра из localStorage при инициализации
+  useEffect(() => {
+    if (user) {
+      const savedTimes = localStorage.getItem(`lastViewedTimes_${user.id}`)
+      if (savedTimes) {
+        try {
+          const parsedTimes = JSON.parse(savedTimes)
+          setLastViewedTimes(new Map(Object.entries(parsedTimes)))
+        } catch (err) {
+          console.error('Ошибка загрузки времени просмотра из localStorage:', err)
+        }
+      }
+    }
+  }, [user])
+
+  // Сохраняем время последнего просмотра в localStorage при изменении
+  useEffect(() => {
+    if (user && lastViewedTimes.size > 0) {
+      const timesObject = Object.fromEntries(lastViewedTimes)
+      localStorage.setItem(`lastViewedTimes_${user.id}`, JSON.stringify(timesObject))
+    }
+  }, [lastViewedTimes, user])
+
   useEffect(() => {
     if (isOpen && user) {
       fetchChats()
