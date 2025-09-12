@@ -49,9 +49,10 @@ interface ChatModalProps {
   recipientId?: string
   recipientName?: string
   onUnreadCountUpdate?: (count: number) => void
+  onViewedChatsUpdate?: (viewedChats: Set<string>) => void
 }
 
-export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate }: ChatModalProps) {
+export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate, onViewedChatsUpdate }: ChatModalProps) {
   const { user } = useAuth()
   const [chats, setChats] = useState<Chat[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -64,6 +65,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
   const [isNewMessage, setIsNewMessage] = useState(false)
   const [lastMessageCount, setLastMessageCount] = useState<number>(0)
+  const [viewedChats, setViewedChats] = useState<Set<string>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -189,7 +191,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       const unreadMessages = messages.filter(message => 
         message.chat_id === chat.id && message.sender_id !== user.id
       )
-      unreadCount += unreadMessages.length
+      
+      // Если чат не был просмотрен, считаем все сообщения непрочитанными
+      if (!viewedChats.has(chat.id)) {
+        unreadCount += unreadMessages.length
+      }
     })
 
     onUnreadCountUpdate(unreadCount)
@@ -197,7 +203,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
 
   useEffect(() => {
     updateUnreadCount()
-  }, [chats, messages, user, onUnreadCountUpdate])
+  }, [chats, messages, viewedChats, user, onUnreadCountUpdate])
+
+  useEffect(() => {
+    if (onViewedChatsUpdate) {
+      onViewedChatsUpdate(viewedChats)
+    }
+  }, [viewedChats, onViewedChatsUpdate])
 
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
@@ -321,6 +333,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       const chatId = data
       setCurrentChatId(chatId)
       setActiveTab('chat')
+      
+      // Отмечаем чат как просмотренный
+      setViewedChats(prev => new Set(prev).add(chatId))
     } catch (err) {
       console.error('Ошибка создания чата:', err)
       alert('Произошла ошибка при создании чата')
@@ -448,6 +463,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                           onClick={() => {
                             setCurrentChatId(chat.id)
                             setActiveTab('chat')
+                            
+                            // Отмечаем чат как просмотренный
+                            setViewedChats(prev => new Set(prev).add(chat.id))
                           }}
                           className="p-3 bg-white rounded-lg border hover:shadow-md cursor-pointer transition-shadow"
                         >

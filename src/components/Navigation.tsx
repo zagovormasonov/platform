@@ -25,6 +25,7 @@ export function Navigation() {
   const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [viewedChats, setViewedChats] = useState<Set<string>>(new Set())
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -32,11 +33,14 @@ export function Navigation() {
 
   const handleOpenChat = () => {
     setShowChat(true)
-    setUnreadCount(0) // Сбрасываем счетчик при открытии чата
   }
 
   const updateUnreadCount = (count: number) => {
     setUnreadCount(count)
+  }
+
+  const updateViewedChats = (viewedChats: Set<string>) => {
+    setViewedChats(viewedChats)
   }
 
   // Загрузка профиля пользователя
@@ -85,7 +89,7 @@ export function Navigation() {
           const chatIds = chats.map(chat => chat.id)
           const { data: messages, error: messagesError } = await supabase
             .from('messages')
-            .select('id')
+            .select('id, chat_id')
             .in('chat_id', chatIds)
             .neq('sender_id', user.id) // Только сообщения от других пользователей
 
@@ -94,7 +98,17 @@ export function Navigation() {
             return
           }
 
-          setUnreadCount(messages?.length || 0)
+          // Подсчитываем только непрочитанные сообщения из непросмотренных чатов
+          let unreadCount = 0
+          if (messages) {
+            messages.forEach(message => {
+              if (!viewedChats.has(message.chat_id)) {
+                unreadCount++
+              }
+            })
+          }
+
+          setUnreadCount(unreadCount)
         } catch (err) {
           console.error('Ошибка подсчета непрочитанных сообщений:', err)
         }
@@ -103,7 +117,7 @@ export function Navigation() {
 
     fetchUserProfile()
     fetchUnreadCount()
-  }, [user])
+  }, [user, viewedChats])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -400,6 +414,7 @@ export function Navigation() {
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           onUnreadCountUpdate={updateUnreadCount}
+          onViewedChatsUpdate={updateViewedChats}
         />
       )}
     </header>
