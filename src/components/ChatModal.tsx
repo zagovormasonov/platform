@@ -54,13 +54,15 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
   useEffect(() => {
     if (isOpen && user) {
       fetchChats()
+      
+      // Проверяем подключение к Supabase
+      console.log('Supabase подключение проверено')
     }
   }, [isOpen, user])
 
@@ -68,16 +70,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     if (currentChatId) {
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
-      
-      // Добавляем периодическое обновление сообщений каждые 2 секунды
-      const interval = setInterval(() => {
-        fetchMessages(currentChatId, true)
-      }, 2000)
-      
-      return () => {
-        unsubscribe()
-        clearInterval(interval)
-      }
+      return unsubscribe
     }
   }, [currentChatId])
 
@@ -123,12 +116,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     }
   }
 
-  const fetchMessages = async (chatId: string, showRefreshIndicator = false) => {
+  const fetchMessages = async (chatId: string) => {
     console.log('Загрузка сообщений для чата:', chatId)
-    
-    if (showRefreshIndicator) {
-      setRefreshing(true)
-    }
     
     try {
       const { data, error } = await supabase
@@ -159,10 +148,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
       alert('Произошла ошибка при загрузке сообщений')
-    } finally {
-      if (showRefreshIndicator) {
-        setRefreshing(false)
-      }
     }
   }
 
@@ -181,8 +166,23 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
         },
         (payload) => {
           console.log('Получено новое сообщение через Realtime:', payload)
-          // Принудительно перезагружаем все сообщения для корректного отображения
-          fetchMessages(chatId)
+          const newMessage = payload.new as Message
+          
+          // Добавляем новое сообщение в список
+          setMessages(prev => {
+            const updated = [...prev, newMessage]
+            console.log('Обновляем список сообщений:', updated)
+            return updated
+          })
+          
+          // Прокручиваем к новому сообщению
+          setTimeout(() => {
+            const messagesContainer = document.getElementById('messages-container')
+            if (messagesContainer) {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight
+            }
+          }, 100)
+          
           fetchChats() // Обновляем список чатов
         }
       )
@@ -404,9 +404,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                       <h3 className="font-medium text-gray-900">
                         {recipientName || 'Пользователь'}
                       </h3>
-                      <p className="text-sm text-gray-500">
-                        {refreshing ? '🔄 Обновление...' : 'В чате'}
-                      </p>
+                      <p className="text-sm text-gray-500">В чате</p>
                     </div>
                   </div>
                 </div>
