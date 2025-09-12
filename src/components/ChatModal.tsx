@@ -54,6 +54,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -67,7 +68,16 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     if (currentChatId) {
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
-      return unsubscribe
+      
+      // Добавляем периодическое обновление сообщений каждые 2 секунды
+      const interval = setInterval(() => {
+        fetchMessages(currentChatId, true)
+      }, 2000)
+      
+      return () => {
+        unsubscribe()
+        clearInterval(interval)
+      }
     }
   }, [currentChatId])
 
@@ -113,8 +123,12 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     }
   }
 
-  const fetchMessages = async (chatId: string) => {
+  const fetchMessages = async (chatId: string, showRefreshIndicator = false) => {
     console.log('Загрузка сообщений для чата:', chatId)
+    
+    if (showRefreshIndicator) {
+      setRefreshing(true)
+    }
     
     try {
       const { data, error } = await supabase
@@ -145,6 +159,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
       alert('Произошла ошибка при загрузке сообщений')
+    } finally {
+      if (showRefreshIndicator) {
+        setRefreshing(false)
+      }
     }
   }
 
@@ -170,6 +188,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
       )
       .subscribe((status) => {
         console.log('Статус подписки Realtime:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime подписка активна')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Ошибка Realtime подписки')
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⏰ Realtime подписка истекла')
+        }
       })
 
     return () => {
@@ -379,7 +404,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
                       <h3 className="font-medium text-gray-900">
                         {recipientName || 'Пользователь'}
                       </h3>
-                      <p className="text-sm text-gray-500">В чате</p>
+                      <p className="text-sm text-gray-500">
+                        {refreshing ? '🔄 Обновление...' : 'В чате'}
+                      </p>
                     </div>
                   </div>
                 </div>
