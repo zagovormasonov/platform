@@ -66,7 +66,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   useEffect(() => {
     if (currentChatId) {
       fetchMessages(currentChatId)
-      subscribeToMessages(currentChatId)
+      const unsubscribe = subscribeToMessages(currentChatId)
+      return unsubscribe
     }
   }, [currentChatId])
 
@@ -113,6 +114,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
   }
 
   const fetchMessages = async (chatId: string) => {
+    console.log('Загрузка сообщений для чата:', chatId)
+    
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -125,16 +128,21 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       if (error) {
         console.error('Ошибка загрузки сообщений:', error)
+        alert(`Ошибка загрузки сообщений: ${error.message}`)
         return
       }
 
+      console.log('Загружены сообщения:', data)
       setMessages(data || [])
     } catch (err) {
       console.error('Ошибка загрузки сообщений:', err)
+      alert('Произошла ошибка при загрузке сообщений')
     }
   }
 
   const subscribeToMessages = (chatId: string) => {
+    console.log('Подписка на сообщения для чата:', chatId)
+    
     const channel = supabase
       .channel(`messages:${chatId}`)
       .on(
@@ -146,20 +154,32 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
           filter: `chat_id=eq.${chatId}`
         },
         (payload) => {
+          console.log('Получено новое сообщение через Realtime:', payload)
           const newMessage = payload.new as Message
-          setMessages(prev => [...prev, newMessage])
+          setMessages(prev => {
+            console.log('Обновляем список сообщений:', [...prev, newMessage])
+            return [...prev, newMessage]
+          })
           fetchChats() // Обновляем список чатов
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Статус подписки Realtime:', status)
+      })
 
     return () => {
+      console.log('Отписываемся от канала:', chatId)
       supabase.removeChannel(channel)
     }
   }
 
   const startChatWithUser = async (recipientId: string) => {
     if (!user) return
+
+    console.log('Создание чата с пользователем:', {
+      userId: user.id,
+      recipientId: recipientId
+    })
 
     try {
       const { data, error } = await supabase.rpc('get_or_create_chat', {
@@ -169,38 +189,51 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
 
       if (error) {
         console.error('Ошибка создания чата:', error)
+        alert(`Ошибка создания чата: ${error.message}`)
         return
       }
 
+      console.log('Чат создан/найден:', data)
       const chatId = data
       setCurrentChatId(chatId)
       setActiveTab('chat')
     } catch (err) {
       console.error('Ошибка создания чата:', err)
+      alert('Произошла ошибка при создании чата')
     }
   }
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentChatId || !user || sending) return
 
+    console.log('Отправка сообщения:', {
+      message: newMessage.trim(),
+      chatId: currentChatId,
+      userId: user.id
+    })
+
     try {
       setSending(true)
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .insert({
           chat_id: currentChatId,
           sender_id: user.id,
           content: newMessage.trim()
         })
+        .select()
 
       if (error) {
         console.error('Ошибка отправки сообщения:', error)
+        alert(`Ошибка отправки сообщения: ${error.message}`)
         return
       }
 
+      console.log('Сообщение отправлено успешно:', data)
       setNewMessage('')
     } catch (err) {
       console.error('Ошибка отправки сообщения:', err)
+      alert('Произошла ошибка при отправке сообщения')
     } finally {
       setSending(false)
     }
