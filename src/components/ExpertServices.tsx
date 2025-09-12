@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Plus, Edit, Trash2, Save, X, DollarSign } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X } from 'lucide-react'
 
 interface Service {
   id: string
@@ -281,7 +281,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                 Цена (руб.) *
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-bold">₽</span>
                 <input
                   type="number"
                   value={newServicePrice}
@@ -324,7 +324,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
       {/* Services List */}
       {services.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <span className="text-6xl mx-auto mb-4 text-gray-300">₽</span>
           <p>У вас пока нет услуг</p>
           <p className="text-sm">Добавьте первую услугу, чтобы клиенты могли с вами связаться</p>
         </div>
@@ -365,7 +365,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                       Цена (руб.) *
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-bold">₽</span>
                       <input
                         type="number"
                         value={editServicePrice}
@@ -412,9 +412,9 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                     )}
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
-                        <DollarSign className="h-4 w-4" />
+                        <span className="text-green-600 font-bold">₽</span>
                         <span className="font-medium text-gray-900">
-                          {service.price.toLocaleString()} {service.currency}
+                          {service.price.toLocaleString()}
                         </span>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs ${

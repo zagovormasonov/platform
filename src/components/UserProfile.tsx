@@ -40,15 +40,33 @@ interface Profile {
   }>
 }
 
+interface Service {
+  id: string
+  service_name: string
+  service_description: string | null
+  price: number
+  currency: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
   const handleClose = onClose || onBack || (() => {})
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     fetchProfile()
   }, [userId])
+
+  useEffect(() => {
+    if (profile?.user_type === 'expert') {
+      fetchServices()
+    }
+  }, [profile])
 
   const fetchProfile = async () => {
     try {
@@ -78,6 +96,28 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
       setError('Не удалось загрузить профиль пользователя')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchServices = async () => {
+    if (!profile) return
+
+    try {
+      const { data, error } = await supabase
+        .from('expert_services')
+        .select('*')
+        .eq('expert_id', profile.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Ошибка загрузки услуг:', error)
+        return
+      }
+
+      setServices(data || [])
+    } catch (err) {
+      console.error('Ошибка загрузки услуг:', err)
     }
   }
 
@@ -292,6 +332,44 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                       </p>
                 </div>
               </div>
+                )}
+
+                {/* Services */}
+                {services.length > 0 && (
+                  <div className="mb-8">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Услуги и цены</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {services.map((service) => (
+                        <div
+                          key={service.id}
+                          className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-semibold text-gray-900 text-lg">
+                              {service.service_name}
+                            </h5>
+                            <div className="flex items-center space-x-1 text-green-600 font-bold">
+                              <span className="text-lg">₽</span>
+                              <span className="text-xl">{service.price.toLocaleString()}</span>
+                            </div>
+                          </div>
+                          {service.service_description && (
+                            <p className="text-gray-600 text-sm mb-3">
+                              {service.service_description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500">
+                              {formatDate(service.created_at)}
+                            </span>
+                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                              Активна
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
