@@ -222,6 +222,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Мои услуги</h3>
         <button
+          type="button"
           onClick={() => setShowAddForm(true)}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -298,6 +299,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
             
             <div className="flex space-x-3">
               <button
+                type="button"
                 onClick={handleAddService}
                 disabled={saving}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -306,6 +308,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                 <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
               </button>
               <button
+                type="button"
                 onClick={cancelAdd}
                 disabled={saving}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -376,6 +379,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                   
                   <div className="flex space-x-3">
                     <button
+                      type="button"
                       onClick={() => handleEditService(service.id)}
                       disabled={saving}
                       className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -384,6 +388,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                       <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
                     </button>
                     <button
+                      type="button"
                       onClick={cancelEdit}
                       disabled={saving}
                       className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -424,6 +429,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                   
                   <div className="flex space-x-2 ml-4">
                     <button
+                      type="button"
                       onClick={() => startEdit(service)}
                       className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Редактировать"
@@ -431,6 +437,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleDeleteService(service.id)}
                       className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                       title="Удалить"
