@@ -25,6 +25,7 @@ export function Navigation() {
   const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set())
 
   const isActive = (path: string) => {
     return location.pathname === path
@@ -36,6 +37,10 @@ export function Navigation() {
 
   const updateUnreadCount = (count: number) => {
     setUnreadCount(count)
+  }
+
+  const updateViewedMessages = (viewedMessages: Set<string>) => {
+    setViewedMessages(viewedMessages)
   }
 
   // Загрузка профиля пользователя
@@ -93,7 +98,17 @@ export function Navigation() {
             return
           }
 
-          setUnreadCount(messages?.length || 0)
+          // Подсчитываем только непрочитанные сообщения
+          let unreadCount = 0
+          if (messages) {
+            messages.forEach(message => {
+              if (!viewedMessages.has(message.id)) {
+                unreadCount++
+              }
+            })
+          }
+
+          setUnreadCount(unreadCount)
         } catch (err) {
           console.error('Ошибка подсчета непрочитанных сообщений:', err)
         }
@@ -102,7 +117,7 @@ export function Navigation() {
 
     fetchUserProfile()
     fetchUnreadCount()
-  }, [user])
+  }, [user, viewedMessages])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -399,6 +414,7 @@ export function Navigation() {
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           onUnreadCountUpdate={updateUnreadCount}
+          onViewedMessagesUpdate={updateViewedMessages}
         />
       )}
     </header>

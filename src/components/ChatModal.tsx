@@ -49,9 +49,10 @@ interface ChatModalProps {
   recipientId?: string
   recipientName?: string
   onUnreadCountUpdate?: (count: number) => void
+  onViewedMessagesUpdate?: (viewedMessages: Set<string>) => void
 }
 
-export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate }: ChatModalProps) {
+export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate, onViewedMessagesUpdate }: ChatModalProps) {
   const { user } = useAuth()
   const [chats, setChats] = useState<Chat[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -64,6 +65,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const [shouldPreserveScroll, setShouldPreserveScroll] = useState(false)
   const [isNewMessage, setIsNewMessage] = useState(false)
   const [lastMessageCount, setLastMessageCount] = useState<number>(0)
+  const [viewedMessages, setViewedMessages] = useState<Set<string>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
 
@@ -187,7 +189,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     chats.forEach(chat => {
       // Получаем все сообщения в чате от других пользователей
       const unreadMessages = messages.filter(message => 
-        message.chat_id === chat.id && message.sender_id !== user.id
+        message.chat_id === chat.id && 
+        message.sender_id !== user.id &&
+        !viewedMessages.has(message.id) // Не считаем просмотренные сообщения
       )
       unreadCount += unreadMessages.length
     })
@@ -196,28 +200,31 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   }
 
   const markChatAsRead = (chatId: string) => {
-    // Сбрасываем счетчик для этого чата
-    if (onUnreadCountUpdate) {
-      const unreadMessages = messages.filter(message => 
-        message.chat_id === chatId && message.sender_id !== user?.id
-      )
-      
-      // Получаем текущий счетчик и вычитаем количество сообщений из этого чата
-      const currentCount = Array.from(chats).reduce((total, chat) => {
-        const chatMessages = messages.filter(message => 
-          message.chat_id === chat.id && message.sender_id !== user?.id
-        )
-        return total + chatMessages.length
-      }, 0)
-      
-      const newCount = currentCount - unreadMessages.length
-      onUnreadCountUpdate(Math.max(0, newCount))
-    }
+    // Отмечаем все сообщения в чате как просмотренные
+    const chatMessages = messages.filter(message => 
+      message.chat_id === chatId && message.sender_id !== user?.id
+    )
+    
+    const messageIds = chatMessages.map(message => message.id)
+    setViewedMessages(prev => {
+      const newSet = new Set(prev)
+      messageIds.forEach(id => newSet.add(id))
+      return newSet
+    })
+    
+    // Обновляем счетчик
+    updateUnreadCount()
   }
 
   useEffect(() => {
     updateUnreadCount()
-  }, [chats, messages, user, onUnreadCountUpdate])
+  }, [chats, messages, viewedMessages, user, onUnreadCountUpdate])
+
+  useEffect(() => {
+    if (onViewedMessagesUpdate) {
+      onViewedMessagesUpdate(viewedMessages)
+    }
+  }, [viewedMessages, onViewedMessagesUpdate])
 
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
