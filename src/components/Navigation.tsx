@@ -24,9 +24,19 @@ export function Navigation() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const isActive = (path: string) => {
     return location.pathname === path
+  }
+
+  const handleOpenChat = () => {
+    setShowChat(true)
+    setUnreadCount(0) // Сбрасываем счетчик при открытии чата
+  }
+
+  const updateUnreadCount = (count: number) => {
+    setUnreadCount(count)
   }
 
   // Загрузка профиля пользователя
@@ -52,7 +62,51 @@ export function Navigation() {
       }
     }
 
+    const fetchUnreadCount = async () => {
+      if (user) {
+        try {
+          // Получаем все чаты пользователя
+          const { data: chats, error: chatsError } = await supabase
+            .from('chats')
+            .select('id, last_message_id')
+            .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
+
+          if (chatsError) {
+            console.error('Ошибка загрузки чатов:', chatsError)
+            return
+          }
+
+          if (!chats || chats.length === 0) {
+            setUnreadCount(0)
+            return
+          }
+
+          // Получаем последние сообщения для каждого чата
+          let totalUnread = 0
+          for (const chat of chats) {
+            if (chat.last_message_id) {
+              const { data: lastMessage, error: messageError } = await supabase
+                .from('messages')
+                .select('sender_id, created_at')
+                .eq('id', chat.last_message_id)
+                .single()
+
+              if (!messageError && lastMessage && lastMessage.sender_id !== user.id) {
+                // Это сообщение от другого пользователя - считаем непрочитанным
+                totalUnread++
+              }
+            }
+          }
+
+          setUnreadCount(totalUnread)
+        } catch (err) {
+          console.error('Ошибка подсчета непрочитанных сообщений:', err)
+        }
+      }
+    }
+
     fetchUserProfile()
+    fetchUnreadCount()
   }, [user])
 
   // Close dropdown when clicking outside
@@ -126,11 +180,16 @@ export function Navigation() {
               </button>
               
               <button
-                onClick={() => setShowChat(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
+                onClick={handleOpenChat}
+                className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
                 title="Чаты"
               >
                 <MessageCircle className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             </nav>
             
@@ -253,13 +312,18 @@ export function Navigation() {
               
               <button
                 onClick={() => {
-                  setShowChat(true)
+                  handleOpenChat()
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+                className="relative flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
               >
                 <MessageCircle className="h-4 w-4" />
                 <span>Чаты</span>
+                {unreadCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
               
               <button
@@ -339,6 +403,7 @@ export function Navigation() {
         <ChatModal
           isOpen={showChat}
           onClose={() => setShowChat(false)}
+          onUnreadCountUpdate={updateUnreadCount}
         />
       )}
     </header>

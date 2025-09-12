@@ -48,9 +48,10 @@ interface ChatModalProps {
   onClose: () => void
   recipientId?: string
   recipientName?: string
+  onUnreadCountUpdate?: (count: number) => void
 }
 
-export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatModalProps) {
+export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate }: ChatModalProps) {
   const { user } = useAuth()
   const [chats, setChats] = useState<Chat[]>([])
   const [messages, setMessages] = useState<Message[]>([])
@@ -177,6 +178,24 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName }: ChatM
       setLoading(false)
     }
   }
+
+  const updateUnreadCount = () => {
+    if (!user || !onUnreadCountUpdate) return
+
+    // Подсчитываем чаты с непрочитанными сообщениями
+    let unreadCount = 0
+    chats.forEach(chat => {
+      if (chat.last_message && chat.last_message.sender_id !== user.id) {
+        unreadCount++
+      }
+    })
+
+    onUnreadCountUpdate(unreadCount)
+  }
+
+  useEffect(() => {
+    updateUnreadCount()
+  }, [chats, user, onUnreadCountUpdate])
 
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
