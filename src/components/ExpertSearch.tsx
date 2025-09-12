@@ -40,7 +40,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedCity, setSelectedCity] = useState('')
   const [sortBy, setSortBy] = useState<'rating' | 'newest' | 'requests'>('rating')
   const [requestReason, setRequestReason] = useState('')
@@ -66,7 +66,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   useEffect(() => {
     fetchExperts()
-  }, [selectedCategory, selectedCity, sortBy])
+  }, [selectedCategories, selectedCity, sortBy])
 
   // Функции для скроллинга
   const scrollToTop = () => {
@@ -89,6 +89,19 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       })
       console.log('Manually scrolled to bottom')
     }
+  }
+
+  // Функции для управления множественным выбором категорий
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    )
+  }
+
+  const clearAllCategories = () => {
+    setSelectedCategories([])
   }
 
   const fetchExperts = async () => {
@@ -164,7 +177,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   const filteredExperts = experts.filter(expert => {
     // Если нет поискового запроса и не выбраны фильтры, не показываем экспертов
-    if (!searchTerm && !selectedCategory && !selectedCity && !requestReason) {
+    if (!searchTerm && selectedCategories.length === 0 && !selectedCity && !requestReason) {
       return false
     }
     
@@ -185,9 +198,11 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       if (!matchesSearch) return false
     }
     
-    // Дополнительная проверка: если выбрана категория, убеждаемся что эксперт действительно работает в этой области
-    if (selectedCategory) {
-      const hasSelectedCategory = expert.categories?.some(cat => cat.category.id === selectedCategory)
+    // Дополнительная проверка: если выбраны категории, убеждаемся что эксперт работает хотя бы в одной из них
+    if (selectedCategories.length > 0) {
+      const hasSelectedCategory = expert.categories?.some(cat => 
+        selectedCategories.includes(cat.category.id)
+      )
       if (!hasSelectedCategory) {
         return false
       }
@@ -294,21 +309,39 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
               {/* Category Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Направление деятельности
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="">Все направления</option>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Направления деятельности
+                  </label>
+                  {selectedCategories.length > 0 && (
+                    <button
+                      onClick={clearAllCategories}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Очистить все
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-48 overflow-y-auto border rounded-lg p-2 space-y-2">
                   {categories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
+                    <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category.id)}
+                        onChange={() => toggleCategory(category.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{category.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {selectedCategories.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-500">
+                      Выбрано: {selectedCategories.length} направлений
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* City Filter */}
@@ -381,13 +414,13 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
               <div className="text-center py-12">
                 <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">
-                  {!searchTerm && !selectedCategory && !selectedCity && !requestReason
+                  {!searchTerm && selectedCategories.length === 0 && !selectedCity && !requestReason
                     ? 'Введите поисковый запрос или выберите фильтры для поиска экспертов'
                     : 'Эксперты не найдены'
                   }
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {!searchTerm && !selectedCategory && !selectedCity && !requestReason
+                  {!searchTerm && selectedCategories.length === 0 && !selectedCity && !requestReason
                     ? 'Используйте поисковую строку или фильтры слева'
                     : 'Попробуйте изменить параметры поиска'
                   }
