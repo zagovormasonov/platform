@@ -86,6 +86,8 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
 
   // Пересчет доступности слотов на основе бронирований
   useEffect(() => {
+    console.log('useEffect пересчета вызван:', { timeSlotsLength: timeSlots.length, bookingsLength: bookings.length })
+    
     if (timeSlots.length > 0 && bookings.length > 0) {
       const updatedSlots = timeSlots.map(slot => {
         // Проверяем, есть ли активное бронирование для этого слота
@@ -105,6 +107,11 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       console.log('Недоступных после пересчета:', updatedSlots.filter(s => !s.is_available).length)
       
       setTimeSlots(updatedSlots)
+    } else if (timeSlots.length > 0 && bookings.length === 0) {
+      console.log('Слоты есть, но бронирований нет - оставляем слоты как есть')
+      // НЕ вызываем setTimeSlots, чтобы не сбрасывать уже загруженные слоты
+    } else {
+      console.log('Пересчет пропущен:', { timeSlotsLength: timeSlots.length, bookingsLength: bookings.length })
     }
   }, [timeSlots.length, bookings.length]) // Зависимости только от количества, чтобы избежать бесконечного цикла
 
@@ -412,7 +419,17 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   // Получение слотов для конкретной даты
   const getSlotsForDate = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0]
-    return timeSlots.filter(slot => slot.slot_date === dateStr)
+    const slotsForDate = timeSlots.filter(slot => slot.slot_date === dateStr)
+    
+    // Логируем только если есть слоты для отладки
+    if (timeSlots.length > 0) {
+      console.log(`Слоты для даты ${dateStr}:`, slotsForDate.length, 'из', timeSlots.length, 'общих')
+      if (slotsForDate.length === 0) {
+        console.log('Доступные даты в слотах:', [...new Set(timeSlots.map(s => s.slot_date))])
+      }
+    }
+    
+    return slotsForDate
   }
 
   // Получение бронирований для конкретной даты
@@ -522,6 +539,9 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
               <div>Недоступных: {timeSlots.filter(s => !s.is_available).length}</div>
               <div>Бронирований: {bookings.length}</div>
               <div>Диапазон дат: {weekDates[0].toISOString().split('T')[0]} - {weekDates[6].toISOString().split('T')[0]}</div>
+              {timeSlots.length > 0 && (
+                <div>Даты слотов: {[...new Set(timeSlots.map(s => s.slot_date))].sort().join(', ')}</div>
+              )}
             </div>
             <div className="flex space-x-2 mt-2">
               <button
