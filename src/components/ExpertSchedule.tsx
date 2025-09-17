@@ -203,16 +203,49 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
       const startDate = new Date().toISOString().split('T')[0]
       const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-      const { error } = await supabase
+      console.log('Генерация слотов для:', { expertId, startDate, endDate })
+
+      const { data, error } = await supabase
         .rpc('generate_time_slots', {
           p_expert_id: expertId,
           p_start_date: startDate,
           p_end_date: endDate
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Ошибка RPC generate_time_slots:', error)
+        
+        // Fallback: проверяем есть ли функция в БД
+        const { data: functions, error: funcError } = await supabase
+          .from('pg_proc')
+          .select('proname')
+          .eq('proname', 'generate_time_slots')
+          
+        if (funcError || !functions || functions.length === 0) {
+          setError('Функция generate_time_slots не найдена в базе данных. Запустите supabase-calendar.sql')
+          return
+        }
+        
+        throw error
+      }
+      
+      console.log('Слоты успешно сгенерированы:', data)
+      
+      // Проверяем, что слоты действительно созданы
+      const { data: slotsCheck, error: checkError } = await supabase
+        .from('time_slots')
+        .select('count')
+        .eq('expert_id', expertId)
+        .gte('slot_date', startDate)
+        .single()
+        
+      if (!checkError && slotsCheck) {
+        console.log('Проверка: создано слотов:', slotsCheck.count)
+      }
+      
     } catch (error: any) {
       console.error('Ошибка генерации слотов:', error)
+      setError('Ошибка генерации временных слотов: ' + error.message)
     }
   }
 
@@ -341,24 +374,36 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAddSchedule}
-            disabled={saving}
-            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Сохранение...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Добавить расписание
-              </>
-            )}
-          </button>
+            <div className="flex space-x-3 mt-4">
+              <button
+                type="button"
+                onClick={handleAddSchedule}
+                disabled={saving}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Добавить расписание
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={generateTimeSlots}
+                disabled={saving}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Сгенерировать слоты
+              </button>
+            </div>
         </div>
       )}
 
