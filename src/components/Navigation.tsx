@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
 import { UserProfile } from './UserProfile'
-import { ChatModal } from './ChatModal'
+import { ChatModalWebSocket } from './ChatModalWebSocket'
 import { supabase } from '../lib/supabase'
 
 interface UserProfile {
@@ -60,16 +60,6 @@ export function Navigation() {
 
   const updateUnreadCount = (count: number) => {
     setUnreadCount(count)
-  }
-
-  const updateLastViewedTimes = (lastViewedTimes: Map<string, string>) => {
-    setLastViewedTimes(lastViewedTimes)
-    
-    // Также сохраняем в localStorage
-    if (user) {
-      const timesObject = Object.fromEntries(lastViewedTimes)
-      localStorage.setItem(`lastViewedTimes_${user.id}`, JSON.stringify(timesObject))
-    }
   }
 
   // Загрузка профиля пользователя
@@ -453,11 +443,10 @@ export function Navigation() {
       )}
       
       {showChat && (
-        <ChatModal
+        <ChatModalWebSocket
           isOpen={showChat}
           onClose={() => setShowChat(false)}
           onUnreadCountUpdate={updateUnreadCount}
-          onLastViewedTimesUpdate={updateLastViewedTimes}
         />
       )}
     </header>

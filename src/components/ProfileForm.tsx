@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload, ChevronDown } from 'lucide-react'
 import { RUSSIAN_CITIES } from '../data/russianCities'
 import { ExpertServices } from './ExpertServices'
+import { ExpertSchedule } from './ExpertSchedule'
 
 interface Profile {
   id: string
@@ -676,6 +677,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
                 {/* Expert Services */}
                 <div className="border-t border-gray-200 pt-6">
                   <ExpertServices expertId={user?.id || ''} />
+              <ExpertSchedule expertId={user?.id || ''} />
                 </div>
               </>
             )}

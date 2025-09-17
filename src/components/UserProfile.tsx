@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { X, User, Mail, MapPin, Phone, Globe, MessageCircle, Star, Users, Calendar, Award } from 'lucide-react'
 import { ReviewsInline } from './ReviewsInline'
 import { ChatButton } from './ChatButton'
+import { ExpertCalendar } from './ExpertCalendar'
 
 interface UserProfileProps {
   userId: string
@@ -385,6 +386,14 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Expert Calendar */}
+                <div className="mb-8">
+                  <ExpertCalendar 
+                    expertId={userId} 
+                    viewMode={user?.id === userId ? 'expert' : 'client'} 
+                  />
+                </div>
               </>
             )}
 
