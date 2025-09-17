@@ -163,6 +163,10 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       throw error
     }
     
+    console.log('Загруженные слоты:', data)
+    console.log('Количество слотов:', data?.length)
+    console.log('Недоступные слоты:', data?.filter(slot => !slot.is_available))
+    
     setTimeSlots(data || [])
   }
 
@@ -188,6 +192,10 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       .order('booking_date, start_time')
 
     if (error) throw error
+    
+    console.log('Загруженные бронирования:', data)
+    console.log('Количество бронирований:', data?.length)
+    
     setBookings(data || [])
   }
 
@@ -224,6 +232,54 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     setSelectedService('')
     setBookingNotes('')
     setShowBookingModal(true)
+  }
+
+  // Создание тестового бронирования для отладки
+  const createTestBooking = async () => {
+    if (!user) {
+      setError('Необходимо войти в систему')
+      return
+    }
+
+    try {
+      setBooking(true)
+      setError('')
+
+      // Найдем первый доступный слот
+      const availableSlot = timeSlots.find(slot => slot.is_available)
+      if (!availableSlot) {
+        setError('Нет доступных слотов для тестового бронирования')
+        return
+      }
+
+      const bookingData = {
+        expert_id: expertId,
+        client_id: user.id,
+        slot_id: availableSlot.id,
+        booking_date: availableSlot.slot_date,
+        start_time: availableSlot.start_time,
+        end_time: availableSlot.end_time,
+        duration_minutes: availableSlot.duration_minutes,
+        status: 'confirmed',
+        notes: 'Тестовое бронирование'
+      }
+
+      console.log('Создаем тестовое бронирование:', bookingData)
+
+      const { error } = await supabase
+        .from('bookings')
+        .insert([bookingData])
+
+      if (error) throw error
+
+      setMessage('Тестовое бронирование создано!')
+      await loadData() // Перезагружаем данные
+    } catch (error: any) {
+      console.error('Ошибка создания тестового бронирования:', error)
+      setError('Ошибка при создании тестового бронирования: ' + error.message)
+    } finally {
+      setBooking(false)
+    }
   }
 
   // Подтверждение бронирования
@@ -369,6 +425,25 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
             </div>
           </div>
         )}
+
+        {/* Debug Panel - временно для отладки */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            <div className="font-medium mb-2">🔧 Панель отладки</div>
+            <div className="space-y-1 text-xs">
+              <div>Всего слотов: {timeSlots.length}</div>
+              <div>Доступных: {timeSlots.filter(s => s.is_available).length}</div>
+              <div>Недоступных: {timeSlots.filter(s => !s.is_available).length}</div>
+              <div>Бронирований: {bookings.length}</div>
+            </div>
+            <button
+              onClick={createTestBooking}
+              className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
+            >
+              Создать тестовое бронирование
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Calendar Grid */}
@@ -430,6 +505,8 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                     const booking = getBookingsForDate(date).find(b => 
                       b.start_time === slot.start_time && b.end_time === slot.end_time
                     )
+                    
+                    console.log(`Слот ${slot.start_time}-${slot.end_time}: доступен=${slot.is_available}, бронирование=`, booking)
                     
                     if (slot.is_available) {
                       // Доступный слот
