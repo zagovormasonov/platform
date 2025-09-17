@@ -234,13 +234,14 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
       // Проверяем, что слоты действительно созданы
       const { data: slotsCheck, error: checkError } = await supabase
         .from('time_slots')
-        .select('count')
+        .select('id')
         .eq('expert_id', expertId)
         .gte('slot_date', startDate)
-        .single()
         
       if (!checkError && slotsCheck) {
-        console.log('Проверка: создано слотов:', slotsCheck.count)
+        console.log('Проверка: создано слотов:', slotsCheck.length)
+      } else if (checkError) {
+        console.error('Ошибка проверки слотов:', checkError)
       }
       
     } catch (error: any) {

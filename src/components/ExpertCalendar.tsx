@@ -132,66 +132,127 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   }
 
   const loadTimeSlots = async (startDate: string, endDate: string) => {
-    // Пробуем использовать представление all_slots_view, если оно существует
-    let query = supabase
-      .from('all_slots_view')
-      .select('*')
-      .eq('expert_id', expertId)
-      .gte('slot_date', startDate)
-      .lte('slot_date', endDate)
-      .order('slot_date, start_time')
-
-    let { data, error } = await query
-
-    // Если представление не существует, используем fallback
-    if (error && error.code === 'PGRST106') {
-      console.log('Представление all_slots_view не найдено, используем fallback запрос')
-      
-      const { data: slotsData, error: slotsError } = await supabase
+    console.log('loadTimeSlots вызван с параметрами:', { expertId, startDate, endDate })
+    
+    try {
+      // Сначала проверим, есть ли слоты в базе вообще
+      const { data: directCheck, error: directError } = await supabase
         .from('time_slots')
-        .select(`
-          *,
-          expert_schedule!inner(duration_minutes)
-        `)
+        .select('id, slot_date, start_time, end_time, is_available')
         .eq('expert_id', expertId)
         .gte('slot_date', startDate)
         .lte('slot_date', endDate)
         .order('slot_date, start_time')
 
-      if (slotsError) throw slotsError
+      console.log('Прямая проверка слотов в БД:', directCheck?.length || 0, 'слотов')
+      console.log('Ошибка прямой проверки:', directError)
+      console.log('Первые 3 слота из прямой проверки:', directCheck?.slice(0, 3))
 
-      // Получаем информацию об эксперте отдельно
-      const { data: expertProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', expertId)
-        .single()
+      if (directError) {
+        console.error('Ошибка при прямой проверке слотов:', directError)
+        setTimeSlots([])
+        return
+      }
 
-      if (profileError) {
-        console.warn('Ошибка загрузки профиля эксперта:', profileError)
+      if (!directCheck || directCheck.length === 0) {
+        console.log('В базе данных нет слотов для этого эксперта и периода')
+        setTimeSlots([])
+        return
+      }
+
+      // Если слоты есть, пробуем загрузить через представление
+      let { data, error } = await supabase
+        .from('all_slots_view')
+        .select('*')
+        .eq('expert_id', expertId)
+        .gte('slot_date', startDate)
+        .lte('slot_date', endDate)
+        .order('slot_date, start_time')
+
+      console.log('Результат запроса all_slots_view:', data?.length || 0, 'слотов')
+      console.log('Ошибка all_slots_view:', error)
+
+      // Если представление не работает, используем fallback
+      if (error || !data || data.length === 0) {
+        console.log('Представление не работает, используем fallback запрос')
+        
+        const { data: slotsData, error: slotsError } = await supabase
+          .from('time_slots')
+          .select(`
+            id,
+            expert_id,
+            slot_date,
+            start_time,
+            end_time,
+            is_available,
+            schedule_id
+          `)
+          .eq('expert_id', expertId)
+          .gte('slot_date', startDate)
+          .lte('slot_date', endDate)
+          .order('slot_date, start_time')
+
+        console.log('Fallback запрос слотов:', slotsData?.length || 0, 'слотов')
+
+        if (slotsError) {
+          console.error('Ошибка fallback запроса:', slotsError)
+          throw slotsError
+        }
+
+        // Получаем информацию об эксперте и расписании отдельно
+        const { data: expertProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', expertId)
+          .single()
+
+        if (profileError) {
+          console.warn('Ошибка загрузки профиля эксперта:', profileError)
+        }
+
+        // Получаем длительность из расписания
+        const scheduleIds = [...new Set(slotsData?.map(slot => slot.schedule_id).filter(Boolean))]
+        let scheduleDurations: Record<string, number> = {}
+        
+        if (scheduleIds.length > 0) {
+          const { data: scheduleData, error: scheduleError } = await supabase
+            .from('expert_schedule')
+            .select('id, duration_minutes')
+            .in('id', scheduleIds)
+
+          if (!scheduleError && scheduleData) {
+            scheduleDurations = scheduleData.reduce((acc: Record<string, number>, schedule: any) => {
+              acc[schedule.id] = schedule.duration_minutes
+              return acc
+            }, {})
+          }
+        }
+        
+        // Преобразуем данные в нужный формат
+        data = (slotsData || []).map(slot => ({
+          id: slot.id,
+          expert_id: slot.expert_id,
+          slot_date: slot.slot_date,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          is_available: slot.is_available,
+          duration_minutes: (slot.schedule_id && scheduleDurations[slot.schedule_id]) || 60,
+          expert_name: expertProfile?.full_name || 'Неизвестно',
+          expert_avatar: expertProfile?.avatar_url || null
+        }))
       }
       
-      // Преобразуем данные в нужный формат
-      data = (slotsData || []).map(slot => ({
-        id: slot.id,
-        expert_id: slot.expert_id,
-        slot_date: slot.slot_date,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        is_available: slot.is_available,
-        duration_minutes: slot.expert_schedule?.duration_minutes || 60,
-        expert_name: expertProfile?.full_name || 'Неизвестно',
-        expert_avatar: expertProfile?.avatar_url || null
-      }))
-    } else if (error) {
+      console.log('Финальные загруженные слоты:', data?.length || 0)
+      console.log('Детали слотов:', data)
+      console.log('Недоступные слоты:', data?.filter(slot => !slot.is_available).length || 0)
+      
+      setTimeSlots(data || [])
+      
+    } catch (error) {
+      console.error('Критическая ошибка загрузки слотов:', error)
+      setTimeSlots([])
       throw error
     }
-    
-    console.log('Загруженные слоты:', data)
-    console.log('Количество слотов:', data?.length)
-    console.log('Недоступные слоты:', data?.filter(slot => !slot.is_available))
-    
-    setTimeSlots(data || [])
   }
 
   const loadServices = async () => {
@@ -455,17 +516,27 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
             <div className="font-medium mb-2">🔧 Панель отладки</div>
             <div className="space-y-1 text-xs">
+              <div>Expert ID: {expertId}</div>
               <div>Всего слотов: {timeSlots.length}</div>
               <div>Доступных: {timeSlots.filter(s => s.is_available).length}</div>
               <div>Недоступных: {timeSlots.filter(s => !s.is_available).length}</div>
               <div>Бронирований: {bookings.length}</div>
+              <div>Диапазон дат: {weekDates[0].toISOString().split('T')[0]} - {weekDates[6].toISOString().split('T')[0]}</div>
             </div>
-            <button
-              onClick={createTestBooking}
-              className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
-            >
-              Создать тестовое бронирование
-            </button>
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={createTestBooking}
+                className="px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700"
+              >
+                Создать тестовое бронирование
+              </button>
+              <button
+                onClick={() => loadData()}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+              >
+                Перезагрузить данные
+              </button>
+            </div>
           </div>
         )}
       </div>
