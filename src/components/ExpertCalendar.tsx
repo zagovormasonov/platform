@@ -534,6 +534,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
             <div className="font-medium mb-2">🔧 Панель отладки</div>
             <div className="space-y-1 text-xs">
               <div>Expert ID: {expertId}</div>
+              <div>Режим просмотра: {viewMode}</div>
               <div>Всего слотов: {timeSlots.length}</div>
               <div>Доступных: {timeSlots.filter(s => s.is_available).length}</div>
               <div>Недоступных: {timeSlots.filter(s => !s.is_available).length}</div>
@@ -603,37 +604,68 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
             return (
             <div key={dayIndex} className="space-y-2">
               {viewMode === 'expert' ? (
-                // Режим эксперта - показываем бронирования
-                getBookingsForDate(date).length > 0 ? (
-                  getBookingsForDate(date).map(booking => (
-                    <div
-                      key={booking.id}
-                      className={`p-2 rounded text-xs border ${
-                        booking.status === 'confirmed' 
-                          ? 'bg-green-100 border-green-300 text-green-800'
-                          : booking.status === 'pending'
-                          ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
-                          : 'bg-gray-100 border-gray-300 text-gray-600'
-                      }`}
-                    >
-                      <div className="font-medium">
-                        {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                // Режим эксперта - показываем ВСЕ слоты (забронированные и свободные)
+                (() => {
+                  const slotsForThisDate = getSlotsForDate(date)
+                  const bookingsForThisDate = getBookingsForDate(date)
+                  
+                  if (slotsForThisDate.length > 0) {
+                    return slotsForThisDate.map(slot => {
+                      const booking = bookingsForThisDate.find(b => 
+                        b.start_time === slot.start_time && b.end_time === slot.end_time
+                      )
+                      
+                      if (booking) {
+                        // Забронированный слот
+                        return (
+                          <div
+                            key={slot.id}
+                            className={`p-2 rounded text-xs border ${
+                              booking.status === 'confirmed' 
+                                ? 'bg-green-100 border-green-300 text-green-800'
+                                : booking.status === 'pending'
+                                ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
+                                : 'bg-gray-100 border-gray-300 text-gray-600'
+                            }`}
+                          >
+                            <div className="font-medium">
+                              {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                            </div>
+                            <div className="text-xs opacity-75">
+                              {booking.client_name}
+                            </div>
+                            {booking.service_name && (
+                              <div className="text-xs opacity-75">
+                                {booking.service_name}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      } else {
+                        // Свободный слот
+                        return (
+                          <div
+                            key={slot.id}
+                            className="p-2 rounded text-xs border bg-blue-50 border-blue-200 text-blue-800"
+                          >
+                            <div className="font-medium">
+                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                            </div>
+                            <div className="text-xs opacity-75">
+                              Свободно
+                            </div>
+                          </div>
+                        )
+                      }
+                    })
+                  } else {
+                    return (
+                      <div className="text-xs text-gray-400 text-center py-4">
+                        Нет слотов
                       </div>
-                      <div className="text-xs opacity-75">
-                        {booking.client_name}
-                      </div>
-                      {booking.service_name && (
-                        <div className="text-xs opacity-75">
-                          {booking.service_name}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-gray-400 text-center py-4">
-                    Нет бронирований
-                  </div>
-                )
+                    )
+                  }
+                })()
               ) : (
                 // Режим клиента - показываем все слоты (доступные и забронированные)
                 (() => {
