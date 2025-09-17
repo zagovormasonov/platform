@@ -84,6 +84,30 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     loadData()
   }, [expertId, currentDate])
 
+  // Пересчет доступности слотов на основе бронирований
+  useEffect(() => {
+    if (timeSlots.length > 0 && bookings.length > 0) {
+      const updatedSlots = timeSlots.map(slot => {
+        // Проверяем, есть ли активное бронирование для этого слота
+        const hasActiveBooking = bookings.some(booking => 
+          booking.slot_id === slot.id && 
+          ['pending', 'confirmed'].includes(booking.status)
+        )
+        
+        // Обновляем доступность на основе наличия бронирования
+        return {
+          ...slot,
+          is_available: !hasActiveBooking
+        }
+      })
+      
+      console.log('Пересчитанные слоты:', updatedSlots)
+      console.log('Недоступных после пересчета:', updatedSlots.filter(s => !s.is_available).length)
+      
+      setTimeSlots(updatedSlots)
+    }
+  }, [timeSlots.length, bookings.length]) // Зависимости только от количества, чтобы избежать бесконечного цикла
+
   const loadData = async () => {
     try {
       setLoading(true)
