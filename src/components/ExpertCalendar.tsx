@@ -556,6 +556,22 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
               >
                 Перезагрузить данные
               </button>
+              <button
+                onClick={() => {
+                  console.log('=== ОТЛАДКА РЕНДЕРА ===')
+                  console.log('timeSlots state:', timeSlots)
+                  console.log('weekDates:', weekDates.map(d => d.toISOString().split('T')[0]))
+                  weekDates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0]
+                    const slots = getSlotsForDate(date)
+                    console.log(`Слоты для ${dateStr}:`, slots)
+                  })
+                  console.log('=== КОНЕЦ ОТЛАДКИ ===')
+                }}
+                className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+              >
+                Отладка рендера
+              </button>
             </div>
           </div>
         )}
