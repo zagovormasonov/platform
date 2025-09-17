@@ -53,6 +53,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
+  const [updatingBooking, setUpdatingBooking] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   
@@ -374,6 +375,59 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     }
   }
 
+  // Управление статусом бронирования (подтверждение/отклонение)
+  const updateBookingStatus = async (bookingId: string, newStatus: 'confirmed' | 'cancelled') => {
+    if (!user) {
+      setError('Необходимо войти в систему')
+      return
+    }
+
+    // Проверяем права: эксперт может подтверждать/отклонять, клиент может только отменять
+    const isExpert = user.id === expertId
+    const canManage = isExpert || newStatus === 'cancelled'
+    
+    if (!canManage) {
+      setError('Недостаточно прав для данного действия')
+      return
+    }
+
+    try {
+      setUpdatingBooking(true)
+      setError('')
+
+      // Дополнительные условия безопасности
+      let query = supabase
+        .from('bookings')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bookingId)
+
+      // Эксперт может управлять своими бронированиями, клиент - только своими отменами
+      if (isExpert) {
+        query = query.eq('expert_id', expertId)
+      } else {
+        query = query.eq('client_id', user.id)
+      }
+
+      const { error } = await query
+
+      if (error) throw error
+
+      const statusText = newStatus === 'confirmed' ? 'подтверждено' : 'отклонено'
+      setMessage(`Бронирование ${statusText}`)
+      
+      // Перезагружаем данные для обновления UI
+      await loadData()
+    } catch (error: any) {
+      console.error('Ошибка обновления статуса бронирования:', error)
+      setError('Ошибка при обновлении статуса бронирования: ' + error.message)
+    } finally {
+      setUpdatingBooking(false)
+    }
+  }
+
   // Подтверждение бронирования
   const confirmBooking = async () => {
     if (!selectedSlot || !user) return
@@ -631,12 +685,37 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                             <div className="font-medium">
                               {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                             </div>
-                            <div className="text-xs opacity-75">
+                            <div className="text-xs opacity-75 mb-1">
                               {booking.client_name}
                             </div>
                             {booking.service_name && (
-                              <div className="text-xs opacity-75">
+                              <div className="text-xs opacity-75 mb-2">
                                 {booking.service_name}
+                              </div>
+                            )}
+                            <div className="text-xs font-medium mb-1">
+                              {booking.status === 'pending' ? 'Ожидает подтверждения' 
+                               : booking.status === 'confirmed' ? 'Подтверждено'
+                               : 'Отменено'}
+                            </div>
+                            
+                            {/* Кнопки управления для pending бронирований */}
+                            {booking.status === 'pending' && user?.id === expertId && (
+                              <div className="flex space-x-1 mt-1">
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                                  disabled={updatingBooking}
+                                  className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 disabled:opacity-50 flex-1"
+                                >
+                                  ✓ Подтвердить
+                                </button>
+                                <button
+                                  onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                  disabled={updatingBooking}
+                                  className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 flex-1"
+                                >
+                                  ✗ Отклонить
+                                </button>
                               </div>
                             )}
                           </div>
@@ -696,27 +775,45 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                           </div>
                         </button>
                       )
-                    } else {
-                      // Забронированный слот
-                      return (
-                        <div
-                          key={slot.id}
-                          className="w-full p-2 text-xs bg-red-50 border border-red-200 text-red-800 rounded opacity-75"
-                        >
-                          <div className="font-medium">
-                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                          </div>
-                          <div className="text-xs opacity-75">
-                            Забронировано
-                          </div>
-                          {booking && booking.client_name && (
-                            <div className="text-xs opacity-75">
-                              {booking.client_name}
+                      } else {
+                        // Забронированный слот
+                        return (
+                          <div
+                            key={slot.id}
+                            className="w-full p-2 text-xs bg-red-50 border border-red-200 text-red-800 rounded opacity-75"
+                          >
+                            <div className="font-medium">
+                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                             </div>
-                          )}
-                        </div>
-                      )
-                    }
+                            <div className="text-xs opacity-75 mb-1">
+                              Забронировано
+                            </div>
+                            {booking && booking.client_name && (
+                              <div className="text-xs opacity-75 mb-1">
+                                {booking.client_name}
+                              </div>
+                            )}
+                            {booking && (
+                              <div className="text-xs font-medium mb-1">
+                                {booking.status === 'pending' ? 'Ожидает подтверждения' 
+                                 : booking.status === 'confirmed' ? 'Подтверждено'
+                                 : 'Отменено'}
+                              </div>
+                            )}
+                            
+                            {/* Кнопка отмены для клиента */}
+                            {booking && booking.status === 'pending' && user?.id === booking.client_id && (
+                              <button
+                                onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                                disabled={updatingBooking}
+                                className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 mt-1"
+                              >
+                                Отменить бронирование
+                              </button>
+                            )}
+                          </div>
+                        )
+                      }
                   })
                 ) : (
                   <div className="text-xs text-gray-400 text-center py-4">
