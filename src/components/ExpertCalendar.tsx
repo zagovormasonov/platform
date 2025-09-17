@@ -97,10 +97,8 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       // Загружаем услуги эксперта
       await loadServices()
       
-      // Загружаем бронирования
-      if (viewMode === 'expert' && user?.id === expertId) {
-        await loadBookings(startDate, endDate)
-      }
+      // Загружаем бронирования для всех режимов
+      await loadBookings(startDate, endDate)
     } catch (error: any) {
       console.error('Ошибка загрузки данных:', error)
       setError('Ошибка загрузки данных')
@@ -110,16 +108,35 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   }
 
   const loadTimeSlots = async (startDate: string, endDate: string) => {
+    // Загружаем все слоты (не только доступные) с информацией об эксперте
     const { data, error } = await supabase
-      .from('available_slots_view')
-      .select('*')
+      .from('time_slots')
+      .select(`
+        *,
+        expert_schedule!inner(duration_minutes),
+        profiles!inner(full_name, avatar_url)
+      `)
       .eq('expert_id', expertId)
       .gte('slot_date', startDate)
       .lte('slot_date', endDate)
       .order('slot_date, start_time')
 
     if (error) throw error
-    setTimeSlots(data || [])
+    
+    // Преобразуем данные в нужный формат
+    const formattedSlots = (data || []).map(slot => ({
+      id: slot.id,
+      expert_id: slot.expert_id,
+      slot_date: slot.slot_date,
+      start_time: slot.start_time,
+      end_time: slot.end_time,
+      is_available: slot.is_available,
+      duration_minutes: slot.expert_schedule?.duration_minutes || 60,
+      expert_name: slot.profiles?.full_name || 'Неизвестно',
+      expert_avatar: slot.profiles?.avatar_url || null
+    }))
+    
+    setTimeSlots(formattedSlots)
   }
 
   const loadServices = async () => {
@@ -140,6 +157,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       .eq('expert_id', expertId)
       .gte('booking_date', startDate)
       .lte('booking_date', endDate)
+      .in('status', ['pending', 'confirmed']) // Показываем только активные бронирования
       .order('booking_date, start_time')
 
     if (error) throw error
@@ -310,6 +328,20 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
             {message}
           </div>
         )}
+
+        {/* Legend */}
+        {viewMode === 'client' && (
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-50 border border-blue-200 rounded"></div>
+              <span className="text-gray-600">Доступно для бронирования</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-50 border border-red-200 rounded"></div>
+              <span className="text-gray-600">Уже забронировано</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Calendar Grid */}
@@ -365,25 +397,54 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                   </div>
                 )
               ) : (
-                // Режим клиента - показываем доступные слоты
+                // Режим клиента - показываем все слоты (доступные и забронированные)
                 getSlotsForDate(date).length > 0 ? (
-                  getSlotsForDate(date).map(slot => (
-                    <button
-                      key={slot.id}
-                      onClick={() => handleBookSlot(slot)}
-                      className="w-full p-2 text-xs bg-blue-50 border border-blue-200 text-blue-800 rounded hover:bg-blue-100 transition-colors"
-                    >
-                      <div className="font-medium">
-                        {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                      </div>
-                      <div className="text-xs opacity-75">
-                        {slot.duration_minutes} мин
-                      </div>
-                    </button>
-                  ))
+                  getSlotsForDate(date).map(slot => {
+                    const booking = getBookingsForDate(date).find(b => 
+                      b.start_time === slot.start_time && b.end_time === slot.end_time
+                    )
+                    
+                    if (slot.is_available) {
+                      // Доступный слот
+                      return (
+                        <button
+                          key={slot.id}
+                          onClick={() => handleBookSlot(slot)}
+                          className="w-full p-2 text-xs bg-blue-50 border border-blue-200 text-blue-800 rounded hover:bg-blue-100 transition-colors"
+                        >
+                          <div className="font-medium">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </div>
+                          <div className="text-xs opacity-75">
+                            {slot.duration_minutes} мин
+                          </div>
+                        </button>
+                      )
+                    } else {
+                      // Забронированный слот
+                      return (
+                        <div
+                          key={slot.id}
+                          className="w-full p-2 text-xs bg-red-50 border border-red-200 text-red-800 rounded opacity-75"
+                        >
+                          <div className="font-medium">
+                            {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                          </div>
+                          <div className="text-xs opacity-75">
+                            Забронировано
+                          </div>
+                          {booking && booking.client_name && (
+                            <div className="text-xs opacity-75">
+                              {booking.client_name}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                  })
                 ) : (
                   <div className="text-xs text-gray-400 text-center py-4">
-                    Нет доступных слотов
+                    Нет слотов
                   </div>
                 )
               )}
