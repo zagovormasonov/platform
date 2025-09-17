@@ -108,35 +108,62 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   }
 
   const loadTimeSlots = async (startDate: string, endDate: string) => {
-    // Загружаем все слоты (не только доступные) с информацией об эксперте
-    const { data, error } = await supabase
-      .from('time_slots')
-      .select(`
-        *,
-        expert_schedule!inner(duration_minutes),
-        profiles!inner(full_name, avatar_url)
-      `)
+    // Пробуем использовать представление all_slots_view, если оно существует
+    let query = supabase
+      .from('all_slots_view')
+      .select('*')
       .eq('expert_id', expertId)
       .gte('slot_date', startDate)
       .lte('slot_date', endDate)
       .order('slot_date, start_time')
 
-    if (error) throw error
+    let { data, error } = await query
+
+    // Если представление не существует, используем fallback
+    if (error && error.code === 'PGRST106') {
+      console.log('Представление all_slots_view не найдено, используем fallback запрос')
+      
+      const { data: slotsData, error: slotsError } = await supabase
+        .from('time_slots')
+        .select(`
+          *,
+          expert_schedule!inner(duration_minutes)
+        `)
+        .eq('expert_id', expertId)
+        .gte('slot_date', startDate)
+        .lte('slot_date', endDate)
+        .order('slot_date, start_time')
+
+      if (slotsError) throw slotsError
+
+      // Получаем информацию об эксперте отдельно
+      const { data: expertProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', expertId)
+        .single()
+
+      if (profileError) {
+        console.warn('Ошибка загрузки профиля эксперта:', profileError)
+      }
+      
+      // Преобразуем данные в нужный формат
+      data = (slotsData || []).map(slot => ({
+        id: slot.id,
+        expert_id: slot.expert_id,
+        slot_date: slot.slot_date,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        is_available: slot.is_available,
+        duration_minutes: slot.expert_schedule?.duration_minutes || 60,
+        expert_name: expertProfile?.full_name || 'Неизвестно',
+        expert_avatar: expertProfile?.avatar_url || null
+      }))
+    } else if (error) {
+      throw error
+    }
     
-    // Преобразуем данные в нужный формат
-    const formattedSlots = (data || []).map(slot => ({
-      id: slot.id,
-      expert_id: slot.expert_id,
-      slot_date: slot.slot_date,
-      start_time: slot.start_time,
-      end_time: slot.end_time,
-      is_available: slot.is_available,
-      duration_minutes: slot.expert_schedule?.duration_minutes || 60,
-      expert_name: slot.profiles?.full_name || 'Неизвестно',
-      expert_avatar: slot.profiles?.avatar_url || null
-    }))
-    
-    setTimeSlots(formattedSlots)
+    setTimeSlots(data || [])
   }
 
   const loadServices = async () => {
