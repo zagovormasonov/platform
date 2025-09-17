@@ -595,7 +595,12 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
           ))}
 
           {/* Time Slots */}
-          {weekDates.map((date, dayIndex) => (
+          {weekDates.map((date, dayIndex) => {
+            const dateStr = date.toISOString().split('T')[0]
+            const daySlots = getSlotsForDate(date)
+            console.log(`📅 Календарная колонка ${dayIndex} (${dateStr}): ${daySlots.length} слотов, режим: ${viewMode}`)
+            
+            return (
             <div key={dayIndex} className="space-y-2">
               {viewMode === 'expert' ? (
                 // Режим эксперта - показываем бронирования
@@ -631,7 +636,11 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                 )
               ) : (
                 // Режим клиента - показываем все слоты (доступные и забронированные)
-                getSlotsForDate(date).length > 0 ? (
+                (() => {
+                  const slotsForThisDate = getSlotsForDate(date)
+                  console.log(`🔍 Рендер для ${date.toISOString().split('T')[0]}: найдено ${slotsForThisDate.length} слотов`)
+                  return slotsForThisDate.length > 0
+                })() ? (
                   getSlotsForDate(date).map(slot => {
                     const booking = getBookingsForDate(date).find(b => 
                       b.start_time === slot.start_time && b.end_time === slot.end_time
@@ -684,7 +693,8 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                 )
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
