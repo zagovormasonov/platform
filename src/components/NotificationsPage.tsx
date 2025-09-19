@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Bell, BellOff, Calendar, User, Clock, Check, X, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { PageLayout } from './PageLayout'
+import { UserProfile } from './UserProfile'
 
 interface Notification {
   id: string
@@ -24,6 +25,8 @@ export function NotificationsPage() {
   const [updatingBookings, setUpdatingBookings] = useState<Set<string>>(new Set())
   const [toastMessage, setToastMessage] = useState<string>('')
   const [showToast, setShowToast] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [showUserProfile, setShowUserProfile] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -175,7 +178,32 @@ export function NotificationsPage() {
         if (slotError) console.error('Ошибка обновления слота:', slotError)
       }
 
-      // Показываем тост вместо перезагрузки всех уведомлений
+      // Обновляем уведомление в базе данных
+      const notificationToUpdate = notifications.find(n => n.data?.booking_id === bookingId)
+      if (notificationToUpdate) {
+        const newType = `booking_${status}`
+        const newTitle = status === 'confirmed' ? 'Бронирование подтверждено' : 'Бронирование отменено'
+        const newMessage = notificationToUpdate.message.replace(
+          'запросил(а) бронирование', 
+          status === 'confirmed' ? 'подтвердил(а) бронирование' : 'отменил(а) бронирование'
+        )
+
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .update({
+            type: newType,
+            title: newTitle,
+            message: newMessage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', notificationToUpdate.id)
+
+        if (notificationError) {
+          console.error('Ошибка обновления уведомления:', notificationError)
+        }
+      }
+
+      // Показываем тост
       const message = status === 'confirmed' ? 'Бронирование подтверждено' : 'Бронирование отменено'
       showToastNotification(message)
 
@@ -217,11 +245,17 @@ export function NotificationsPage() {
     }, 4000)
   }
 
-  // Функция для перехода в профиль пользователя (эмуляция UserProfile модального окна)
-  const openUserProfile = (clientId: string, clientName: string) => {
-    // Здесь можно добавить логику для открытия модального окна профиля
-    console.log('Открытие профиля пользователя:', { clientId, clientName })
-    // TODO: Реализовать открытие UserProfile компонента в модальном окне
+  // Функция для перехода в профиль пользователя
+  const openUserProfile = (userId: string, userName: string) => {
+    console.log('Открытие профиля пользователя:', { userId, userName })
+    setSelectedUserId(userId)
+    setShowUserProfile(true)
+  }
+
+  // Функция для закрытия профиля пользователя
+  const closeUserProfile = () => {
+    setSelectedUserId(null)
+    setShowUserProfile(false)
   }
 
   const getNotificationIcon = (type: string) => {
@@ -458,14 +492,15 @@ export function NotificationsPage() {
                         )}
                         
                         {/* Показываем статус для обработанных бронирований */}
-                        {(notification.type === 'booking_confirmed' || notification.type === 'booking_cancelled') && (
+                        {(notification.type === 'booking_confirmed' || notification.type === 'booking_cancelled' || 
+                          notification.type === 'booking_confirmed_client' || notification.type === 'booking_cancelled_client') && (
                           <div className="mt-3">
                             <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                              notification.type === 'booking_confirmed'
+                              (notification.type === 'booking_confirmed' || notification.type === 'booking_confirmed_client')
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
                             }`}>
-                              {notification.type === 'booking_confirmed' ? (
+                              {(notification.type === 'booking_confirmed' || notification.type === 'booking_confirmed_client') ? (
                                 <>
                                   <CheckCircle className="h-3 w-3" />
                                   <span>Подтверждено</span>
@@ -519,6 +554,14 @@ export function NotificationsPage() {
             <span className="font-medium">{toastMessage}</span>
           </div>
         </div>
+      )}
+
+      {/* Модальное окно профиля пользователя */}
+      {showUserProfile && selectedUserId && (
+        <UserProfile
+          userId={selectedUserId}
+          onClose={closeUserProfile}
+        />
       )}
     </PageLayout>
   )
