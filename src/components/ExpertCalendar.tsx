@@ -123,143 +123,121 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       const startDate = weekDates[0].toISOString().split('T')[0]
       const endDate = weekDates[6].toISOString().split('T')[0]
 
+      console.log('🔄 loadData вызван для недели:', { startDate, endDate })
+      console.log('📅 Даты недели:', weekDates.map(d => d.toISOString().split('T')[0]))
+      console.log('👤 Expert ID:', expertId)
+
       // Загружаем слоты
+      console.log('⏰ Начинаем загрузку слотов...')
       await loadTimeSlots(startDate, endDate)
+      console.log('✅ Слоты загружены')
       
       // Загружаем услуги эксперта
+      console.log('🎯 Начинаем загрузку услуг...')
       await loadServices()
+      console.log('✅ Услуги загружены')
       
       // Загружаем бронирования для всех режимов
+      console.log('📋 Начинаем загрузку бронирований...')
       await loadBookings(startDate, endDate)
+      console.log('✅ Бронирования загружены')
+      
     } catch (error: any) {
-      console.error('Ошибка загрузки данных:', error)
-      setError('Ошибка загрузки данных')
+      console.error('❌ Ошибка загрузки данных:', error)
+      setError('Ошибка загрузки данных: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
 
   const loadTimeSlots = async (startDate: string, endDate: string) => {
-    console.log('loadTimeSlots вызван с параметрами:', { expertId, startDate, endDate })
+    console.log('🔍 loadTimeSlots вызван с параметрами:', { expertId, startDate, endDate })
     
     try {
-      // Сначала проверим, есть ли слоты в базе вообще
-      const { data: directCheck, error: directError } = await supabase
+      // Используем только прямой запрос к time_slots
+      const { data: slotsData, error: slotsError } = await supabase
         .from('time_slots')
-        .select('id, slot_date, start_time, end_time, is_available')
+        .select(`
+          id,
+          expert_id,
+          slot_date,
+          start_time,
+          end_time,
+          is_available,
+          schedule_id
+        `)
         .eq('expert_id', expertId)
         .gte('slot_date', startDate)
         .lte('slot_date', endDate)
         .order('slot_date, start_time')
 
-      console.log('Прямая проверка слотов в БД:', directCheck?.length || 0, 'слотов')
-      console.log('Ошибка прямой проверки:', directError)
-      console.log('Первые 3 слота из прямой проверки:', directCheck?.slice(0, 3))
+      console.log('💾 Прямой запрос к time_slots результат:', slotsData?.length || 0, 'слотов')
+      console.log('📊 Все загруженные слоты:', slotsData)
 
-      if (directError) {
-        console.error('Ошибка при прямой проверке слотов:', directError)
+      if (slotsError) {
+        console.error('❌ Ошибка прямого запроса:', slotsError)
+        throw slotsError
+      }
+
+      if (!slotsData || slotsData.length === 0) {
+        console.log('🚫 В базе данных нет слотов для этого эксперта и периода')
         setTimeSlots([])
         return
       }
 
-      if (!directCheck || directCheck.length === 0) {
-        console.log('В базе данных нет слотов для этого эксперта и периода')
-        setTimeSlots([])
-        return
+      // Получаем информацию об эксперте
+      const { data: expertProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', expertId)
+        .single()
+
+      if (profileError) {
+        console.warn('⚠️ Ошибка загрузки профиля эксперта:', profileError)
       }
 
-      // Если слоты есть, пробуем загрузить через представление
-      let { data, error } = await supabase
-        .from('all_slots_view')
-        .select('*')
-        .eq('expert_id', expertId)
-        .gte('slot_date', startDate)
-        .lte('slot_date', endDate)
-        .order('slot_date, start_time')
+      // Получаем длительность из расписания
+      const scheduleIds = [...new Set(slotsData.map(slot => slot.schedule_id).filter(Boolean))]
+      let scheduleDurations: Record<string, number> = {}
+      
+      if (scheduleIds.length > 0) {
+        const { data: scheduleData, error: scheduleError } = await supabase
+          .from('expert_schedule')
+          .select('id, duration_minutes')
+          .in('id', scheduleIds)
 
-      console.log('Результат запроса all_slots_view:', data?.length || 0, 'слотов')
-      console.log('Ошибка all_slots_view:', error)
-
-      // Если представление не работает, используем fallback
-      if (error || !data || data.length === 0) {
-        console.log('Представление не работает, используем fallback запрос')
-        
-        const { data: slotsData, error: slotsError } = await supabase
-          .from('time_slots')
-          .select(`
-            id,
-            expert_id,
-            slot_date,
-            start_time,
-            end_time,
-            is_available,
-            schedule_id
-          `)
-          .eq('expert_id', expertId)
-          .gte('slot_date', startDate)
-          .lte('slot_date', endDate)
-          .order('slot_date, start_time')
-
-        console.log('Fallback запрос слотов:', slotsData?.length || 0, 'слотов')
-
-        if (slotsError) {
-          console.error('Ошибка fallback запроса:', slotsError)
-          throw slotsError
+        if (!scheduleError && scheduleData) {
+          scheduleDurations = scheduleData.reduce((acc: Record<string, number>, schedule: any) => {
+            acc[schedule.id] = schedule.duration_minutes
+            return acc
+          }, {})
         }
-
-        // Получаем информацию об эксперте и расписании отдельно
-        const { data: expertProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', expertId)
-          .single()
-
-        if (profileError) {
-          console.warn('Ошибка загрузки профиля эксперта:', profileError)
-        }
-
-        // Получаем длительность из расписания
-        const scheduleIds = [...new Set(slotsData?.map(slot => slot.schedule_id).filter(Boolean))]
-        let scheduleDurations: Record<string, number> = {}
-        
-        if (scheduleIds.length > 0) {
-          const { data: scheduleData, error: scheduleError } = await supabase
-            .from('expert_schedule')
-            .select('id, duration_minutes')
-            .in('id', scheduleIds)
-
-          if (!scheduleError && scheduleData) {
-            scheduleDurations = scheduleData.reduce((acc: Record<string, number>, schedule: any) => {
-              acc[schedule.id] = schedule.duration_minutes
-              return acc
-            }, {})
-          }
-        }
-        
-        // Преобразуем данные в нужный формат
-        data = (slotsData || []).map(slot => ({
-          id: slot.id,
-          expert_id: slot.expert_id,
-          slot_date: slot.slot_date,
-          start_time: slot.start_time,
-          end_time: slot.end_time,
-          is_available: slot.is_available,
-          duration_minutes: (slot.schedule_id && scheduleDurations[slot.schedule_id]) || 60,
-          expert_name: expertProfile?.full_name || 'Неизвестно',
-          expert_avatar: expertProfile?.avatar_url || null
-        }))
       }
       
-      console.log('Финальные загруженные слоты:', data?.length || 0)
-      console.log('Детали слотов:', data)
-      console.log('Недоступные слоты:', data?.filter(slot => !slot.is_available).length || 0)
+      // Преобразуем данные в нужный формат
+      const formattedSlots = slotsData.map(slot => ({
+        id: slot.id,
+        expert_id: slot.expert_id,
+        slot_date: slot.slot_date,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        is_available: slot.is_available,
+        duration_minutes: (slot.schedule_id && scheduleDurations[slot.schedule_id]) || 60,
+        expert_name: expertProfile?.full_name || 'Неизвестно',
+        expert_avatar: expertProfile?.avatar_url || null
+      }))
       
-      setTimeSlots(data || [])
+      console.log('✅ Финальные загруженные слоты:', formattedSlots.length)
+      console.log('📅 Уникальные даты в слотах:', [...new Set(formattedSlots.map(s => s.slot_date))])
+      console.log('🔢 Недоступные слоты:', formattedSlots.filter(slot => !slot.is_available).length)
+      console.log('📋 Детали первых 5 слотов:', formattedSlots.slice(0, 5))
       
-    } catch (error) {
-      console.error('Критическая ошибка загрузки слотов:', error)
+      setTimeSlots(formattedSlots)
+      
+    } catch (error: any) {
+      console.error('❌ Критическая ошибка загрузки временных слотов:', error)
+      setError('Ошибка загрузки временных слотов: ' + error.message)
       setTimeSlots([])
-      throw error
     }
   }
 
