@@ -22,6 +22,8 @@ export function NotificationsPage() {
   const [error, setError] = useState('')
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
   const [updatingBookings, setUpdatingBookings] = useState<Set<string>>(new Set())
+  const [toastMessage, setToastMessage] = useState<string>('')
+  const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -173,10 +175,22 @@ export function NotificationsPage() {
         if (slotError) console.error('Ошибка обновления слота:', slotError)
       }
 
-      // Перезагружаем уведомления чтобы обновить статусы
-      await fetchNotifications()
+      // Показываем тост вместо перезагрузки всех уведомлений
+      const message = status === 'confirmed' ? 'Бронирование подтверждено' : 'Бронирование отменено'
+      showToastNotification(message)
 
-      console.log(`Бронирование ${status === 'confirmed' ? 'подтверждено' : 'отменено'}`)
+      // Обновляем локальное состояние уведомления
+      setNotifications(prev => prev.map(notification => {
+        if (notification.data?.booking_id === bookingId) {
+          return {
+            ...notification,
+            type: `booking_${status}`,
+            title: status === 'confirmed' ? 'Бронирование подтверждено' : 'Бронирование отменено',
+            message: notification.message.replace('запросил(а) бронирование', status === 'confirmed' ? 'подтвердил(а) бронирование' : 'отменил(а) бронирование')
+          }
+        }
+        return notification
+      }))
 
     } catch (error: any) {
       console.error('Ошибка обновления бронирования:', error)
@@ -193,6 +207,23 @@ export function NotificationsPage() {
   const confirmBooking = (bookingId: string) => updateBookingStatus(bookingId, 'confirmed')
   const cancelBooking = (bookingId: string) => updateBookingStatus(bookingId, 'cancelled')
 
+  // Функция для показа тост-уведомлений
+  const showToastNotification = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => {
+      setShowToast(false)
+      setToastMessage('')
+    }, 4000)
+  }
+
+  // Функция для перехода в профиль пользователя (эмуляция UserProfile модального окна)
+  const openUserProfile = (clientId: string, clientName: string) => {
+    // Здесь можно добавить логику для открытия модального окна профиля
+    console.log('Открытие профиля пользователя:', { clientId, clientName })
+    // TODO: Реализовать открытие UserProfile компонента в модальном окне
+  }
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'booking_pending':
@@ -201,6 +232,10 @@ export function NotificationsPage() {
         return <Check className="h-5 w-5 text-green-600" />
       case 'booking_cancelled':
         return <X className="h-5 w-5 text-red-600" />
+      case 'booking_confirmed_client':
+        return <CheckCircle className="h-5 w-5 text-green-600" />
+      case 'booking_cancelled_client':
+        return <XCircle className="h-5 w-5 text-red-600" />
       default:
         return <Bell className="h-5 w-5 text-blue-600" />
     }
@@ -217,6 +252,10 @@ export function NotificationsPage() {
       case 'booking_confirmed':
         return isRead ? baseClasses : 'bg-green-50 border-green-200'
       case 'booking_cancelled':
+        return isRead ? baseClasses : 'bg-red-50 border-red-200'
+      case 'booking_confirmed_client':
+        return isRead ? baseClasses : 'bg-green-50 border-green-200'
+      case 'booking_cancelled_client':
         return isRead ? baseClasses : 'bg-red-50 border-red-200'
       default:
         return baseClasses
@@ -371,32 +410,46 @@ export function NotificationsPage() {
                             </span>
                           )}
                           
-                          {notification.data?.client_name && (
+                          {(notification.data?.client_name || notification.data?.expert_name) && (
                             <span className="flex items-center">
                               <User className="h-3 w-3 mr-1" />
-                              {notification.data.client_name}
+                              <button
+                                onClick={() => {
+                                  if (notification.data.client_name) {
+                                    openUserProfile(notification.data.client_id, notification.data.client_name)
+                                  } else if (notification.data.expert_name) {
+                                    openUserProfile(notification.data.expert_id, notification.data.expert_name)
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                                title="Открыть профиль пользователя"
+                              >
+                                {notification.data.client_name || notification.data.expert_name}
+                              </button>
                             </span>
                           )}
                         </div>
                         
                         {/* Кнопки управления бронированием */}
-                        {notification.type === 'booking_pending' && notification.data?.booking_id && (
+                        {(notification.type === 'booking_pending' || notification.type === 'booking_confirmed') && notification.data?.booking_id && (
                           <div className="flex items-center space-x-2 mt-3">
-                            <button
-                              onClick={() => confirmBooking(notification.data.booking_id)}
-                              disabled={updatingBookings.has(notification.data.booking_id)}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs rounded-lg transition-colors"
-                              title="Подтвердить бронирование"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              <span>{updatingBookings.has(notification.data.booking_id) ? 'Подтверждаем...' : 'Подтвердить'}</span>
-                            </button>
+                            {notification.type === 'booking_pending' && (
+                              <button
+                                onClick={() => confirmBooking(notification.data.booking_id)}
+                                disabled={updatingBookings.has(notification.data.booking_id)}
+                                className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs rounded-lg transition-colors"
+                                title="Подтвердить бронирование"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                <span>{updatingBookings.has(notification.data.booking_id) ? 'Подтверждаем...' : 'Подтвердить'}</span>
+                              </button>
+                            )}
                             
                             <button
                               onClick={() => cancelBooking(notification.data.booking_id)}
                               disabled={updatingBookings.has(notification.data.booking_id)}
                               className="flex items-center space-x-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs rounded-lg transition-colors"
-                              title="Отменить бронирование"
+                              title={notification.type === 'booking_confirmed' ? 'Отменить подтвержденное бронирование' : 'Отменить бронирование'}
                             >
                               <XCircle className="h-4 w-4" />
                               <span>{updatingBookings.has(notification.data.booking_id) ? 'Отменяем...' : 'Отменить'}</span>
@@ -457,6 +510,16 @@ export function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {/* Тост-уведомление */}
+      {showToast && (
+        <div className="fixed top-20 right-4 z-[10000] animate-in fade-in duration-300">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">{toastMessage}</span>
+          </div>
+        </div>
+      )}
     </PageLayout>
   )
 }
