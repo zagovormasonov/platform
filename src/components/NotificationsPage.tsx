@@ -98,26 +98,6 @@ export function NotificationsPage() {
     }
   }
 
-  const markAllAsRead = async () => {
-    try {
-      const unreadCount = notifications.filter(n => !n.is_read).length
-      if (unreadCount === 0) return
-
-      const { error } = await supabase
-        .rpc('mark_all_notifications_as_read', {
-          p_user_id: user!.id
-        })
-
-      if (error) throw error
-
-      // Обновляем локальное состояние
-      setNotifications(prev => prev.map(notification => 
-        ({ ...notification, is_read: true })
-      ))
-    } catch (error) {
-      console.error('Ошибка при пометке всех как прочитанные:', error)
-    }
-  }
 
   const deleteNotification = async (notificationId: string) => {
     try {
@@ -194,6 +174,7 @@ export function NotificationsPage() {
             type: newType,
             title: newTitle,
             message: newMessage,
+            is_read: true, // Автоматически помечаем как прочитанное
             updated_at: new Date().toISOString()
           })
           .eq('id', notificationToUpdate.id)
@@ -214,7 +195,8 @@ export function NotificationsPage() {
             ...notification,
             type: `booking_${status}`,
             title: status === 'confirmed' ? 'Бронирование подтверждено' : 'Бронирование отменено',
-            message: notification.message.replace('запросил(а) бронирование', status === 'confirmed' ? 'подтвердил(а) бронирование' : 'отменил(а) бронирование')
+            message: notification.message.replace('запросил(а) бронирование', status === 'confirmed' ? 'подтвердил(а) бронирование' : 'отменил(а) бронирование'),
+            is_read: true // Автоматически помечаем как прочитанное
           }
         }
         return notification
@@ -376,15 +358,6 @@ export function NotificationsPage() {
                   </span>
                 )}
               </div>
-              
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="btn-secondary text-sm"
-                >
-                  Прочитать все
-                </button>
-              )}
             </div>
             <p className="text-gray-600">
               {notifications.length === 0 
