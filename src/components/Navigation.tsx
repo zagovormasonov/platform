@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
@@ -300,6 +300,24 @@ export function Navigation() {
                     <Users className="h-4 w-4" />
                     <span>Друзья</span>
                   </Link>
+                  
+                  <Link
+                    to="/favorites"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <Bookmark className="h-4 w-4" />
+                    <span>Избранное</span>
+                  </Link>
+                  
+                  <Link
+                    to="/liked"
+                    onClick={() => setShowProfileMenu(false)}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span>Понравившиеся</span>
+                  </Link>
                 </div>
               )}
             </div>
@@ -417,6 +435,24 @@ export function Navigation() {
               >
                 <Users className="h-4 w-4" />
                 <span>Друзья</span>
+              </Link>
+              
+              <Link
+                to="/favorites"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+              >
+                <Bookmark className="h-4 w-4" />
+                <span>Избранное</span>
+              </Link>
+              
+              <Link
+                to="/liked"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+              >
+                <Heart className="h-4 w-4" />
+                <span>Понравившиеся</span>
               </Link>
               
               <button

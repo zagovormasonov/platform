@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Calendar, User, Eye, Tag, Clock, TrendingUp } from 'lucide-react'
+import { User, Eye, Tag, Clock, TrendingUp, Heart, Bookmark } from 'lucide-react'
 import { useRefresh } from '../contexts/RefreshContext'
 import { UserProfile } from './UserProfile'
 import { PageLayout } from './PageLayout'
@@ -16,6 +16,9 @@ interface Article {
   image_url?: string | null
   tags?: string[] | null
   views_count?: number | null
+  likes_count?: number | null
+  is_liked?: boolean
+  is_favorited?: boolean
   profiles: {
     full_name: string | null
     email: string
@@ -23,7 +26,7 @@ interface Article {
   } | null
 }
 
-type SortOption = 'newest' | 'popular' | 'oldest'
+type SortOption = 'newest' | 'popular'
 
 export function Feed() {
   const { refreshTrigger } = useRefresh()
@@ -39,6 +42,95 @@ export function Feed() {
   
   const ARTICLES_PER_PAGE = 30
 
+  // Функции для работы с лайками и избранным
+  const toggleLike = async (articleId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const article = allArticles.find(a => a.id === articleId)
+      if (!article) return
+
+      if (article.is_liked) {
+        // Убираем лайк
+        const { error } = await supabase
+          .from('article_likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('article_id', articleId)
+
+        if (error) throw error
+
+        // Обновляем локальное состояние
+        setAllArticles(prev => prev.map(a => 
+          a.id === articleId 
+            ? { ...a, is_liked: false, likes_count: (a.likes_count || 0) - 1 }
+            : a
+        ))
+      } else {
+        // Добавляем лайк
+        const { error } = await supabase
+          .from('article_likes')
+          .insert({ user_id: user.id, article_id: articleId })
+
+        if (error) throw error
+
+        // Обновляем локальное состояние
+        setAllArticles(prev => prev.map(a => 
+          a.id === articleId 
+            ? { ...a, is_liked: true, likes_count: (a.likes_count || 0) + 1 }
+            : a
+        ))
+      }
+    } catch (error) {
+      console.error('Ошибка при работе с лайком:', error)
+    }
+  }
+
+  const toggleFavorite = async (articleId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const article = allArticles.find(a => a.id === articleId)
+      if (!article) return
+
+      if (article.is_favorited) {
+        // Убираем из избранного
+        const { error } = await supabase
+          .from('article_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('article_id', articleId)
+
+        if (error) throw error
+
+        // Обновляем локальное состояние
+        setAllArticles(prev => prev.map(a => 
+          a.id === articleId 
+            ? { ...a, is_favorited: false }
+            : a
+        ))
+      } else {
+        // Добавляем в избранное
+        const { error } = await supabase
+          .from('article_favorites')
+          .insert({ user_id: user.id, article_id: articleId })
+
+        if (error) throw error
+
+        // Обновляем локальное состояние
+        setAllArticles(prev => prev.map(a => 
+          a.id === articleId 
+            ? { ...a, is_favorited: true }
+            : a
+        ))
+      }
+    } catch (error) {
+      console.error('Ошибка при работе с избранным:', error)
+    }
+  }
+
   // Функция сортировки статей
   const sortArticles = (articles: Article[], sortType: SortOption): Article[] => {
     const sorted = [...articles]
@@ -47,8 +139,6 @@ export function Feed() {
         return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       case 'popular':
         return sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
-      case 'oldest':
-        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
       default:
         return sorted
     }
@@ -92,6 +182,8 @@ export function Feed() {
       setLoading(true)
       setError('')
 
+      const { data: { user } } = await supabase.auth.getUser()
+
       // Загружаем ВСЕ опубликованные статьи (без пагинации)
       const { data, error } = await supabase
         .from('articles')
@@ -106,6 +198,7 @@ export function Feed() {
           image_url,
           tags,
           views_count,
+          likes_count,
           profiles!articles_author_id_fkey (
             full_name,
             email,
@@ -121,9 +214,33 @@ export function Feed() {
         return
       }
 
-      // Приводим данные к правильному типу
+      // Если пользователь авторизован, получаем информацию о его лайках и избранном
+      let userLikes: string[] = []
+      let userFavorites: string[] = []
+
+      if (user) {
+        // Получаем лайки пользователя
+        const { data: likesData } = await supabase
+          .from('article_likes')
+          .select('article_id')
+          .eq('user_id', user.id)
+
+        userLikes = likesData?.map(like => like.article_id) || []
+
+        // Получаем избранное пользователя
+        const { data: favoritesData } = await supabase
+          .from('article_favorites')
+          .select('article_id')
+          .eq('user_id', user.id)
+
+        userFavorites = favoritesData?.map(fav => fav.article_id) || []
+      }
+
+      // Приводим данные к правильному типу и добавляем информацию о лайках/избранном
       const typedData = data?.map(article => ({
         ...article,
+        is_liked: userLikes.includes(article.id),
+        is_favorited: userFavorites.includes(article.id),
         profiles: (article.profiles as any) as { full_name: string | null; email: string; avatar_url: string | null } | null
       })) || []
       
@@ -199,21 +316,21 @@ export function Feed() {
   if (error) {
     return (
       <PageLayout>
-        <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
           <div className="text-center bg-white bg-opacity-90 rounded-lg p-8 shadow-lg">
-            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
-              <Eye className="h-6 w-6 text-red-600" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
-            <p className="mt-2 text-gray-600">{error}</p>
-            <button
-              onClick={() => fetchPublishedArticles()}
-              className="mt-4 btn-primary"
-            >
-              Попробовать снова
-            </button>
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
+            <Eye className="h-6 w-6 text-red-600" />
           </div>
+          <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
+          <p className="mt-2 text-gray-600">{error}</p>
+          <button
+              onClick={() => fetchPublishedArticles()}
+            className="mt-4 btn-primary"
+          >
+            Попробовать снова
+          </button>
         </div>
+      </div>
       </PageLayout>
     )
   }
@@ -278,17 +395,6 @@ export function Feed() {
                 <TrendingUp className="h-4 w-4 inline mr-1" />
                 Популярные
               </button>
-              <button
-                onClick={() => setSortBy('oldest')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  sortBy === 'oldest'
-                    ? 'bg-white bg-opacity-30 text-white shadow-lg backdrop-blur-sm border border-white border-opacity-40'
-                    : 'bg-white bg-opacity-10 text-white text-opacity-80 hover:bg-opacity-20 hover:text-opacity-100'
-                }`}
-              >
-                <Calendar className="h-4 w-4 inline mr-1" />
-                Старые
-              </button>
             </div>
           </div>
 
@@ -300,9 +406,9 @@ export function Feed() {
               <h3 className="mt-4 text-lg font-medium text-white">Пока нет опубликованных статей</h3>
               <p className="mt-2 text-gray-200">
                 Статьи появятся здесь, как только пользователи начнут публиковать свои материалы
-              </p>
-            </div>
-          ) : (
+            </p>
+          </div>
+        ) : (
             <div className="space-y-6">
               {displayedArticles.map((article) => {
                 const isExpanded = expandedArticles.has(article.id)
@@ -379,18 +485,18 @@ export function Feed() {
                               className="flex items-center space-x-3 hover:text-white hover:text-opacity-100 transition-colors"
                             >
                               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
-                                {article.profiles?.avatar_url ? (
-                                  <img
-                                    src={article.profiles.avatar_url}
-                                    alt={getAuthorName(article.profiles)}
+                        {article.profiles?.avatar_url ? (
+                          <img
+                            src={article.profiles.avatar_url}
+                            alt={getAuthorName(article.profiles)}
                                     className="w-10 h-10 object-cover"
-                                  />
-                                ) : (
+                          />
+                        ) : (
                                   <User className="h-5 w-5 text-white" />
-                                )}
-                              </div>
+                        )}
+                      </div>
                               <span className="text-white text-lg">{getAuthorName(article.profiles)}</span>
-                            </button>
+                    </button>
                             <div className="flex flex-col items-end space-y-2">
                               {article.views_count && (
                                 <div className="flex items-center space-x-2">
@@ -399,13 +505,13 @@ export function Feed() {
                                 </div>
                               )}
                               <div className="flex items-center space-x-2">
-                                <Calendar className="h-4 w-4" />
+                      <Clock className="h-4 w-4" />
                                 <span>{new Date(article.created_at).toLocaleDateString('ru-RU')}</span>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </div>
+                    </div>
+                  </div>
+                </div>
                     </article>
                   )
                 }
@@ -475,8 +581,8 @@ export function Feed() {
                                 Развернуть
                               </button>
                             )}
-                          </div>
-                          
+                </div>
+                
                           {/* Author & Meta */}
                           <div className="flex items-start justify-between text-sm text-white text-opacity-70 mb-4">
                             <button
@@ -507,13 +613,46 @@ export function Feed() {
                                 </div>
                               )}
                               <div className="flex items-center justify-end space-x-1">
-                                <Calendar className="h-3 w-3" />
+                                <Clock className="h-3 w-3" />
                                 <span>{new Date(article.created_at).toLocaleDateString('ru-RU')}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </article>
+                    </div>
+                    </div>
+                  </div>
+                  
+                  {/* Лайки и избранное */}
+                  <div className="flex items-center justify-between pt-4 border-t border-white border-opacity-20">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleLike(article.id)
+                      }}
+                      className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg transition-all ${
+                        article.is_liked
+                          ? 'bg-red-500 bg-opacity-20 text-red-300 hover:bg-opacity-30'
+                          : 'bg-white bg-opacity-10 text-white text-opacity-70 hover:bg-opacity-20 hover:text-opacity-100'
+                      }`}
+                    >
+                      <Heart className={`h-4 w-4 ${article.is_liked ? 'fill-current' : ''}`} />
+                      <span className="text-sm">{article.likes_count || 0}</span>
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleFavorite(article.id)
+                      }}
+                      className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg transition-all ${
+                        article.is_favorited
+                          ? 'bg-yellow-500 bg-opacity-20 text-yellow-300 hover:bg-opacity-30'
+                          : 'bg-white bg-opacity-10 text-white text-opacity-70 hover:bg-opacity-20 hover:text-opacity-100'
+                      }`}
+                    >
+                      <Bookmark className={`h-4 w-4 ${article.is_favorited ? 'fill-current' : ''}`} />
+                      <span className="text-sm">В избранное</span>
+                    </button>
+                  </div>
+                </div>
+              </article>
                     )
                   })}
               </div>
@@ -532,8 +671,8 @@ export function Feed() {
           {!hasMore && displayedArticles.length > 0 && displayedArticles.length === allArticles.length && (
             <div className="text-center py-8">
               <p className="text-gray-200">Больше статей нет</p>
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
     </PageLayout>

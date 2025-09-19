@@ -7,6 +7,8 @@ import { Dashboard } from './components/Dashboard'
 import { Feed } from './components/Feed'
 import { ProfilePage } from './components/ProfilePage'
 import { FriendsPage } from './components/FriendsPage'
+import { FavoritesPage } from './components/FavoritesPage'
+import { LikedPage } from './components/LikedPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function AppContent() {
@@ -69,6 +71,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <FriendsPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/favorites" 
+          element={
+            <ProtectedRoute>
+              <FavoritesPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/liked" 
+          element={
+            <ProtectedRoute>
+              <LikedPage />
             </ProtectedRoute>
           } 
         />
