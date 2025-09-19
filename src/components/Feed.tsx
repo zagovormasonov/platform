@@ -234,14 +234,14 @@ export function Feed() {
       <div 
         className="fixed inset-0 z-0"
         style={{
-          backgroundImage: 'url(/space.jpg)',
+          backgroundImage: 'url(/enhanced.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
           top: '64px' // Отступ под хедер
         }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-60"></div>
       </div>
       
       {/* Content */}

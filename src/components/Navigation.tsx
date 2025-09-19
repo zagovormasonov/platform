@@ -190,8 +190,12 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-xl text-yellow-500">⭐</span>
+          <Link to="/" className="flex items-center space-x-3">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <div className="flex flex-col">
               <span className="text-lg sm:text-xl font-bold text-indigo-600">SoulSynergy</span>
               <span className="text-xs text-gray-600">centerra</span>
