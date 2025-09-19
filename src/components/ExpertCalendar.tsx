@@ -463,9 +463,10 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     
     // Логируем только если есть слоты для отладки
     if (timeSlots.length > 0) {
-      console.log(`Слоты для даты ${dateStr}:`, slotsForDate.length, 'из', timeSlots.length, 'общих')
+      console.log(`🔍 getSlotsForDate для ${dateStr}:`, slotsForDate.length, 'из', timeSlots.length, 'общих')
       if (slotsForDate.length === 0) {
-        console.log('Доступные даты в слотах:', [...new Set(timeSlots.map(s => s.slot_date))])
+        console.log('📅 Доступные даты в слотах:', [...new Set(timeSlots.map(s => s.slot_date))])
+        console.log('🔍 Первые 3 слота для сравнения:', timeSlots.slice(0, 3).map(s => ({date: s.slot_date, time: s.start_time})))
       }
     }
     
