@@ -246,7 +246,7 @@ export function Feed() {
       
       {/* Content */}
       <div className="relative z-10 pt-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
           <div className="text-center mb-8">
             {/* Title */}
@@ -414,7 +414,7 @@ export function Feed() {
               }).filter(Boolean)}
               
               {/* Сетка обычных карточек */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {displayedArticles
                   .filter(article => !expandedArticles.has(article.id))
                   .map((article) => {
