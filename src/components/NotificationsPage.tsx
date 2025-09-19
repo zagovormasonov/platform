@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Bell, BellOff, Calendar, User, Clock, Check, X, Trash2 } from 'lucide-react'
+import { Bell, BellOff, Calendar, User, Clock, Check, X, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { PageLayout } from './PageLayout'
 
@@ -21,6 +21,7 @@ export function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
+  const [updatingBookings, setUpdatingBookings] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (user) {
@@ -136,6 +137,61 @@ export function NotificationsPage() {
       })
     }
   }
+
+  // Управление бронированиями
+  const updateBookingStatus = async (bookingId: string, status: 'confirmed' | 'cancelled') => {
+    if (!user) return
+
+    setUpdatingBookings(prev => new Set(prev).add(bookingId))
+
+    try {
+      // Обновляем статус бронирования
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bookingId)
+        .eq('expert_id', user.id) // Проверяем что эксперт управляет своими бронированиями
+
+      if (bookingError) throw bookingError
+
+      // Обновляем доступность слота
+      if (status === 'cancelled') {
+        // При отмене делаем слот снова доступным
+        const { error: slotError } = await supabase
+          .from('time_slots')
+          .update({ is_available: true })
+          .eq('id', (await supabase
+            .from('bookings')
+            .select('slot_id')
+            .eq('id', bookingId)
+            .single()
+          ).data?.slot_id)
+
+        if (slotError) console.error('Ошибка обновления слота:', slotError)
+      }
+
+      // Перезагружаем уведомления чтобы обновить статусы
+      await fetchNotifications()
+
+      console.log(`Бронирование ${status === 'confirmed' ? 'подтверждено' : 'отменено'}`)
+
+    } catch (error: any) {
+      console.error('Ошибка обновления бронирования:', error)
+      setError('Ошибка при обновлении бронирования: ' + error.message)
+    } finally {
+      setUpdatingBookings(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(bookingId)
+        return newSet
+      })
+    }
+  }
+
+  const confirmBooking = (bookingId: string) => updateBookingStatus(bookingId, 'confirmed')
+  const cancelBooking = (bookingId: string) => updateBookingStatus(bookingId, 'cancelled')
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -322,6 +378,54 @@ export function NotificationsPage() {
                             </span>
                           )}
                         </div>
+                        
+                        {/* Кнопки управления бронированием */}
+                        {notification.type === 'booking_pending' && notification.data?.booking_id && (
+                          <div className="flex items-center space-x-2 mt-3">
+                            <button
+                              onClick={() => confirmBooking(notification.data.booking_id)}
+                              disabled={updatingBookings.has(notification.data.booking_id)}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white text-xs rounded-lg transition-colors"
+                              title="Подтвердить бронирование"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              <span>{updatingBookings.has(notification.data.booking_id) ? 'Подтверждаем...' : 'Подтвердить'}</span>
+                            </button>
+                            
+                            <button
+                              onClick={() => cancelBooking(notification.data.booking_id)}
+                              disabled={updatingBookings.has(notification.data.booking_id)}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white text-xs rounded-lg transition-colors"
+                              title="Отменить бронирование"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              <span>{updatingBookings.has(notification.data.booking_id) ? 'Отменяем...' : 'Отменить'}</span>
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Показываем статус для обработанных бронирований */}
+                        {(notification.type === 'booking_confirmed' || notification.type === 'booking_cancelled') && (
+                          <div className="mt-3">
+                            <span className={`inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+                              notification.type === 'booking_confirmed'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {notification.type === 'booking_confirmed' ? (
+                                <>
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>Подтверждено</span>
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="h-3 w-3" />
+                                  <span>Отменено</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
