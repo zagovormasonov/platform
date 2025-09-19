@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { X, Save, Eye } from 'lucide-react'
+import { X, Save, Eye, Upload, Tag, Plus, Trash2 } from 'lucide-react'
 
 interface Article {
   id: string
@@ -10,6 +10,9 @@ interface Article {
   published: boolean
   created_at: string
   updated_at: string
+  image_url?: string | null
+  tags?: string[] | null
+  views_count?: number | null
 }
 
 interface ArticleFormProps {
@@ -25,14 +28,79 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
   const [published, setPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState('')
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (article) {
       setTitle(article.title)
       setContent(article.content)
       setPublished(article.published)
+      setImageUrl(article.image_url || '')
+      setTags(article.tags || [])
     }
   }, [article])
+
+  const addTag = () => {
+    if (newTag.trim() && tags.length < 5 && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()])
+      setNewTag('')
+    }
+  }
+
+  const removeTag = (index: number) => {
+    setTags(tags.filter((_, i) => i !== index))
+  }
+
+  const uploadImage = async (file: File) => {
+    if (!user) return
+
+    try {
+      setUploading(true)
+      setError('')
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`
+
+      const { error } = await supabase.storage
+        .from('articles')
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('articles')
+        .getPublicUrl(fileName)
+
+      setImageUrl(publicUrl)
+    } catch (error: any) {
+      console.error('Ошибка загрузки изображения:', error)
+      setError('Не удалось загрузить изображение: ' + error.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Проверяем размер файла (макс 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Размер файла не должен превышать 5MB')
+        return
+      }
+      
+      // Проверяем тип файла
+      if (!file.type.startsWith('image/')) {
+        setError('Пожалуйста, выберите изображение')
+        return
+      }
+      
+      uploadImage(file)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +119,8 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
             content,
             published,
             updated_at: new Date().toISOString(),
+            image_url: imageUrl || null,
+            tags: tags.length > 0 ? tags : null
           })
           .eq('id', article.id)
           .select()
@@ -71,6 +141,8 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
             content,
             author_id: user.id,
             published,
+            image_url: imageUrl || null,
+            tags: tags.length > 0 ? tags : null
           })
           .select()
           .single()
@@ -139,6 +211,91 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
                   className="input-field resize-none"
                   placeholder="Поделитесь своим духовным опытом, инсайтами и открытиями..."
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Изображение статьи
+                </label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                    <Upload className="h-4 w-4" />
+                    <span className="text-sm">
+                      {uploading ? 'Загрузка...' : 'Выбрать изображение'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                  </label>
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {imageUrl && (
+                  <div className="mt-3">
+                    <img
+                      src={imageUrl}
+                      alt="Превью изображения"
+                      className="h-32 w-48 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Теги (максимум 5)
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="flex items-center space-x-1 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full"
+                    >
+                      <Tag className="h-3 w-3" />
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(index)}
+                        className="text-indigo-600 hover:text-indigo-800"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {tags.length < 5 && (
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                      placeholder="Добавить тег"
+                      className="flex-1 input-field"
+                    />
+                    <button
+                      type="button"
+                      onClick={addTag}
+                      disabled={!newTag.trim() || tags.includes(newTag.trim())}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Publish Toggle */}

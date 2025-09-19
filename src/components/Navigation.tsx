@@ -193,8 +193,8 @@ export function Navigation() {
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-xl text-yellow-500">⭐</span>
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-bold text-gray-900">Centerra</span>
-              <span className="text-xs text-gray-600">soulsynergy</span>
+              <span className="text-lg sm:text-xl font-bold text-indigo-600">SoulSynergy</span>
+              <span className="text-xs text-gray-600">centerra</span>
             </div>
           </Link>
           
