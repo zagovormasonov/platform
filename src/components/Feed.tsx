@@ -27,51 +27,73 @@ type SortOption = 'newest' | 'popular' | 'oldest'
 
 export function Feed() {
   const { refreshTrigger } = useRefresh()
-  const [articles, setArticles] = useState<Article[]>([])
+  const [allArticles, setAllArticles] = useState<Article[]>([]) // Все загруженные статьи
+  const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]) // Отображаемые статьи
   const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [hasMore, setHasMore] = useState(true)
   const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set())
+  const [displayCount, setDisplayCount] = useState(30) // Сколько статей показывать
   
   const ARTICLES_PER_PAGE = 30
 
+  // Функция сортировки статей
+  const sortArticles = (articles: Article[], sortType: SortOption): Article[] => {
+    const sorted = [...articles]
+    switch (sortType) {
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      case 'popular':
+        return sorted.sort((a, b) => (b.views_count || 0) - (a.views_count || 0))
+      case 'oldest':
+        return sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      default:
+        return sorted
+    }
+  }
+
+  // Обновление отображаемых статей при изменении сортировки или количества
   useEffect(() => {
-    setArticles([])
+    if (allArticles.length > 0) {
+      const sorted = sortArticles(allArticles, sortBy)
+      setDisplayedArticles(sorted.slice(0, displayCount))
+      setHasMore(displayCount < allArticles.length)
+    }
+  }, [allArticles, sortBy, displayCount])
+
+  // Загрузка статей только при изменении refreshTrigger
+  useEffect(() => {
+    setAllArticles([])
+    setDisplayCount(30)
     setHasMore(true)
-    fetchPublishedArticles(true)
-  }, [refreshTrigger, sortBy])
+    fetchPublishedArticles()
+  }, [refreshTrigger])
 
   // Infinite scroll
   useEffect(() => {
     const handleScroll = () => {
       if (window.innerHeight + document.documentElement.scrollTop
           >= document.documentElement.offsetHeight - 1000) {
-        if (!loading && !loadingMore && hasMore) {
-          fetchPublishedArticles(false)
+        if (!loading && hasMore) {
+          // Показываем больше статей из уже загруженных
+          setDisplayCount(prev => prev + ARTICLES_PER_PAGE)
         }
       }
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [loading, loadingMore, hasMore])
+  }, [loading, hasMore])
 
-  const fetchPublishedArticles = async (reset = false) => {
+  const fetchPublishedArticles = async () => {
     try {
-      if (reset) {
-        setLoading(true)
-        setError('')
-      } else {
-        setLoadingMore(true)
-      }
+      setLoading(true)
+      setError('')
 
-      const from = reset ? 0 : articles.length
-      const to = from + ARTICLES_PER_PAGE - 1
-
-      let query = supabase
+      // Загружаем ВСЕ опубликованные статьи (без пагинации)
+      const { data, error } = await supabase
         .from('articles')
         .select(`
           id,
@@ -91,22 +113,7 @@ export function Feed() {
           )
         `)
         .eq('published', true)
-        .range(from, to)
-
-      // Применяем сортировку
-      switch (sortBy) {
-        case 'newest':
-          query = query.order('created_at', { ascending: false })
-          break
-        case 'popular':
-          query = query.order('views_count', { ascending: false })
-          break
-        case 'oldest':
-          query = query.order('created_at', { ascending: true })
-          break
-      }
-
-      const { data, error } = await query
+        .order('created_at', { ascending: false }) // По умолчанию сортируем по новизне
 
       if (error) {
         console.error('Ошибка загрузки статей:', error)
@@ -120,21 +127,13 @@ export function Feed() {
         profiles: (article.profiles as any) as { full_name: string | null; email: string; avatar_url: string | null } | null
       })) || []
       
-      if (reset) {
-        setArticles(typedData)
-      } else {
-        setArticles(prev => [...prev, ...typedData])
-      }
-
-      // Проверяем, есть ли еще статьи
-      setHasMore(typedData.length === ARTICLES_PER_PAGE)
+      setAllArticles(typedData)
       
     } catch (err) {
       console.error('Ошибка загрузки статей:', err)
       setError('Произошла неожиданная ошибка')
     } finally {
       setLoading(false)
-      setLoadingMore(false)
     }
   }
 
@@ -199,21 +198,23 @@ export function Feed() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
-            <Eye className="h-6 w-6 text-red-600" />
+      <PageLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center bg-white bg-opacity-90 rounded-lg p-8 shadow-lg">
+            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
+              <Eye className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
+            <p className="mt-2 text-gray-600">{error}</p>
+            <button
+              onClick={() => fetchPublishedArticles()}
+              className="mt-4 btn-primary"
+            >
+              Попробовать снова
+            </button>
           </div>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
-          <p className="mt-2 text-gray-600">{error}</p>
-          <button
-            onClick={() => fetchPublishedArticles(true)}
-            className="mt-4 btn-primary"
-          >
-            Попробовать снова
-          </button>
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
@@ -290,7 +291,7 @@ export function Feed() {
             </div>
           </div>
 
-          {articles.length === 0 && !loading ? (
+          {displayedArticles.length === 0 && !loading ? (
             <div className="text-center py-12">
               <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-white bg-opacity-20">
                 <Eye className="h-6 w-6 text-white" />
@@ -302,7 +303,7 @@ export function Feed() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articles.map((article) => {
+              {displayedArticles.map((article) => {
                 const isExpanded = expandedArticles.has(article.id)
                 const previewText = getPreviewText(article.content, isExpanded)
                 const shouldShowButton = article.content.length > 200
@@ -405,16 +406,16 @@ export function Feed() {
             </div>
           )}
           
-          {/* Loading More */}
-          {loadingMore && (
+          {/* Loading More - показываем только при начальной загрузке */}
+          {loading && displayedArticles.length === 0 && (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-              <p className="mt-2 text-white">Загрузка...</p>
+              <p className="mt-2 text-white">Загрузка статей...</p>
             </div>
           )}
           
           {/* No More Articles */}
-          {!hasMore && articles.length > 0 && (
+          {!hasMore && displayedArticles.length > 0 && displayedArticles.length === allArticles.length && (
             <div className="text-center py-8">
               <p className="text-gray-200">Больше статей нет</p>
             </div>
