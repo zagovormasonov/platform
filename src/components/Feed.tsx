@@ -229,21 +229,22 @@ export function Feed() {
 
   return (
     <PageLayout>
-      {/* Background Image */}
+      {/* Background Image - под навигацией */}
       <div 
         className="fixed inset-0 z-0"
         style={{
           backgroundImage: 'url(/space.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
+          backgroundAttachment: 'fixed',
+          top: '64px' // Отступ под хедер
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
       </div>
       
       {/* Content */}
-      <div className="relative z-10">
+      <div className="relative z-10 pt-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
           <div className="text-center mb-8">
