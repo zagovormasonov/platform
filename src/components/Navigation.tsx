@@ -306,7 +306,7 @@ export function Navigation() {
             
             <button
               onClick={signOut}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100"
+              className="flex items-center space-x-2 text-white text-opacity-90 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-15"
             >
               <LogOut className="h-4 w-4" />
               <span>Выйти</span>
@@ -424,7 +424,7 @@ export function Navigation() {
                   signOut()
                   setShowMobileMenu(false)
                 }}
-                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+                className="flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15 touch-manipulation"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Выйти</span>
