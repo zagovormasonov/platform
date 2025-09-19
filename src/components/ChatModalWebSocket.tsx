@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useWebSocketChat } from '../hooks/useWebSocketChat'
-import { Send, X, MessageCircle, User, ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Send, X, MessageCircle, User, ArrowLeft } from 'lucide-react'
 
 interface ChatModalProps {
   isOpen: boolean
@@ -30,28 +29,32 @@ interface Chat {
   } | null
 }
 
-export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: ChatModalProps) {
+interface Message {
+  id: string
+  chat_id: string
+  sender_id: string
+  content: string
+  message_type: string
+  is_read: boolean
+  created_at: string
+  sender_profile?: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  }
+}
+
+export function ChatModalWebSocket({ isOpen, onClose }: ChatModalProps) {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [chats, setChats] = useState<Chat[]>([])
   const [loadingChats, setLoadingChats] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loadingMessages, setLoadingMessages] = useState(false)
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  
-  const {
-    isConnected,
-    messages,
-    unreadCount,
-    currentChatId,
-    sendMessage,
-    joinChat,
-    markChatAsRead,
-    setCurrentChatId
-  } = useWebSocketChat({
-    userId: user?.id || null,
-    onUnreadCountUpdate
-  })
 
   // Автоматический скролл к последнему сообщению
   useEffect(() => {
@@ -59,6 +62,58 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, currentChatId])
+
+  // Загрузка сообщений чата
+  const fetchMessages = async (chatId: string) => {
+    if (!user) return
+
+    setLoadingMessages(true)
+    try {
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          chat_id,
+          sender_id,
+          content,
+          message_type,
+          is_read,
+          created_at,
+          sender_profile:profiles!messages_sender_id_fkey(
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true })
+
+      if (messagesError) {
+        console.error('Ошибка загрузки сообщений:', messagesError)
+        return
+      }
+
+      // Обрабатываем данные из Supabase
+      const processedMessages = (messagesData || []).map((message: any) => ({
+        id: message.id,
+        chat_id: message.chat_id,
+        sender_id: message.sender_id,
+        content: message.content,
+        message_type: message.message_type,
+        is_read: message.is_read,
+        created_at: message.created_at,
+        sender_profile: Array.isArray(message.sender_profile) 
+          ? message.sender_profile[0] 
+          : message.sender_profile
+      }))
+
+      setMessages(processedMessages)
+    } catch (error) {
+      console.error('Ошибка при загрузке сообщений:', error)
+    } finally {
+      setLoadingMessages(false)
+    }
+  }
 
   // Загрузка чатов пользователя
   const fetchChats = async () => {
@@ -125,18 +180,48 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
 
   // Обработка отправки сообщения
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !currentChatId || sending) return
+    if (!newMessage.trim() || !currentChatId || sending || !user) return
 
     setSending(true)
-    const success = sendMessage(currentChatId, newMessage.trim())
-    
-    if (success) {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: currentChatId,
+          sender_id: user.id,
+          content: newMessage.trim(),
+          message_type: 'text',
+          is_read: false
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Ошибка отправки сообщения:', error)
+        alert('Ошибка отправки сообщения')
+        return
+      }
+
       setNewMessage('')
-    } else {
-      alert('Ошибка отправки сообщения')
+      
+      // Обновляем список сообщений
+      await fetchMessages(currentChatId)
+      
+      // Обновляем время последнего сообщения в чате
+      await supabase
+        .from('chats')
+        .update({ 
+          updated_at: new Date().toISOString(),
+          last_message_id: data.id
+        })
+        .eq('id', currentChatId)
+
+    } catch (error) {
+      console.error('Ошибка при отправке сообщения:', error)
+      alert('Ошибка при отправке сообщения')
+    } finally {
+      setSending(false)
     }
-    
-    setSending(false)
   }
 
   // Обработка нажатия Enter
@@ -151,18 +236,18 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
   const handleChatClick = (chatId: string) => {
     setCurrentChatId(chatId)
     setActiveTab('chat')
-    joinChat(chatId)
-    markChatAsRead(chatId)
+    fetchMessages(chatId)
   }
 
   // Обработка возврата к списку чатов
   const handleBackToChats = () => {
     setActiveTab('chats')
     setCurrentChatId(null)
+    setMessages([])
   }
 
   // Получение сообщений текущего чата
-  const currentMessages = currentChatId ? messages.get(currentChatId) || [] : []
+  const currentMessages = messages
 
   // Получение партнера по чату
   const getCurrentChatPartner = () => {
@@ -246,10 +331,8 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
                     {getCurrentChatPartner()?.full_name || 'Пользователь'}
                   </h2>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-sm text-gray-500">
-                      {isConnected ? 'Онлайн' : 'Офлайн'}
-                    </span>
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-sm text-gray-500">Онлайн</span>
                   </div>
                 </div>
               </>
@@ -307,11 +390,6 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
                             Последнее сообщение: {new Date(chat.updated_at).toLocaleDateString('ru-RU')}
                           </p>
                         </div>
-                        {unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                            {unreadCount > 99 ? '99+' : unreadCount}
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -322,27 +400,41 @@ export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: Cha
             /* Chat Messages */
             <>
               <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                {currentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.senderId === user?.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-900'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.senderId === user?.id ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </p>
+                {loadingMessages ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-gray-500">Загрузка сообщений...</div>
+                  </div>
+                ) : currentMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="text-center text-gray-500">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>Начните общение</p>
+                      <p className="text-sm">Отправьте первое сообщение</p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  currentMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.sender_id === user?.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 text-gray-900'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <p className={`text-xs mt-1 ${
+                          message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
