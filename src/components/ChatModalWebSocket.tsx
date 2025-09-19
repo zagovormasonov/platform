@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useWebSocketChat } from '../hooks/useWebSocketChat'
 import { Send, X, MessageCircle, User, ArrowLeft } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 interface ChatModalProps {
   isOpen: boolean
@@ -11,11 +12,31 @@ interface ChatModalProps {
   onUnreadCountUpdate?: (count: number) => void
 }
 
-export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName, onUnreadCountUpdate }: ChatModalProps) {
+interface Chat {
+  id: string
+  participant_1: string
+  participant_2: string
+  created_at: string
+  updated_at: string
+  participant_1_profile?: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+  participant_2_profile?: {
+    id: string
+    full_name: string | null
+    avatar_url: string | null
+  } | null
+}
+
+export function ChatModalWebSocket({ isOpen, onClose, onUnreadCountUpdate }: ChatModalProps) {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'chats' | 'chat'>('chats')
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [chats, setChats] = useState<Chat[]>([])
+  const [loadingChats, setLoadingChats] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
   const {
@@ -38,6 +59,69 @@ export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, currentChatId])
+
+  // Загрузка чатов пользователя
+  const fetchChats = async () => {
+    if (!user) return
+
+    setLoadingChats(true)
+    try {
+      const { data: chatsData, error: chatsError } = await supabase
+        .from('chats')
+        .select(`
+          id,
+          participant_1,
+          participant_2,
+          created_at,
+          updated_at,
+          participant_1_profile:profiles!chats_participant_1_fkey(
+            id,
+            full_name,
+            avatar_url
+          ),
+          participant_2_profile:profiles!chats_participant_2_fkey(
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
+        .order('updated_at', { ascending: false })
+
+      if (chatsError) {
+        console.error('Ошибка загрузки чатов:', chatsError)
+        return
+      }
+
+      // Обрабатываем данные из Supabase
+      const processedChats = (chatsData || []).map((chat: any) => ({
+        id: chat.id,
+        participant_1: chat.participant_1,
+        participant_2: chat.participant_2,
+        created_at: chat.created_at,
+        updated_at: chat.updated_at,
+        participant_1_profile: Array.isArray(chat.participant_1_profile) 
+          ? chat.participant_1_profile[0] 
+          : chat.participant_1_profile,
+        participant_2_profile: Array.isArray(chat.participant_2_profile) 
+          ? chat.participant_2_profile[0] 
+          : chat.participant_2_profile
+      }))
+
+      setChats(processedChats)
+    } catch (error) {
+      console.error('Ошибка при загрузке чатов:', error)
+    } finally {
+      setLoadingChats(false)
+    }
+  }
+
+  // Загружаем чаты при открытии модального окна
+  useEffect(() => {
+    if (isOpen && activeTab === 'chats') {
+      fetchChats()
+    }
+  }, [isOpen, activeTab, user])
 
   // Обработка отправки сообщения
   const handleSendMessage = async () => {
@@ -84,13 +168,41 @@ export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName
   const getCurrentChatPartner = () => {
     if (!currentChatId || !user) return null
     
-    // В реальном приложении здесь должна быть логика получения профиля партнера
-    // Пока возвращаем заглушку
-    return {
-      id: recipientId || 'unknown',
-      full_name: recipientName || 'Пользователь',
+    const chat = chats.find(c => c.id === currentChatId)
+    if (!chat) return null
+
+    // Определяем, кто является партнером (не текущий пользователь)
+    const partner = chat.participant_1 === user.id 
+      ? chat.participant_2_profile 
+      : chat.participant_1_profile
+
+    return partner || {
+      id: chat.participant_1 === user.id ? chat.participant_2 : chat.participant_1,
+      full_name: 'Пользователь',
       avatar_url: null
     }
+  }
+
+  // Получение имени партнера для чата
+  const getChatPartnerName = (chat: Chat) => {
+    if (!user) return 'Пользователь'
+    
+    const partner = chat.participant_1 === user.id 
+      ? chat.participant_2_profile 
+      : chat.participant_1_profile
+
+    return partner?.full_name || 'Пользователь'
+  }
+
+  // Получение аватара партнера для чата
+  const getChatPartnerAvatar = (chat: Chat) => {
+    if (!user) return null
+    
+    const partner = chat.participant_1 === user.id 
+      ? chat.participant_2_profile 
+      : chat.participant_1_profile
+
+    return partner?.avatar_url
   }
 
   if (!isOpen) return null
@@ -157,28 +269,54 @@ export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName
           {activeTab === 'chats' ? (
             /* Chat List */
             <div className="flex-1 p-4 overflow-y-auto">
-              <div className="space-y-3">
-                {/* Заглушка для демонстрации */}
-                <div
-                  onClick={() => handleChatClick('demo-chat-1')}
-                  className="p-3 bg-white rounded-lg border hover:shadow-md cursor-pointer transition-shadow"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-500" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium">Демо чат</h3>
-                      <p className="text-sm text-gray-500">Нажмите для начала чата</p>
-                    </div>
-                    {unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
+              {loadingChats ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-gray-500">Загрузка чатов...</div>
+                </div>
+              ) : chats.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-center text-gray-500">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>У вас пока нет чатов</p>
+                    <p className="text-sm">Начните общение с другими пользователями</p>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {chats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      onClick={() => handleChatClick(chat.id)}
+                      className="p-3 bg-white rounded-lg border hover:shadow-md cursor-pointer transition-shadow"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                          {getChatPartnerAvatar(chat) ? (
+                            <img
+                              src={getChatPartnerAvatar(chat) || ''}
+                              alt={getChatPartnerName(chat)}
+                              className="w-10 h-10 object-cover"
+                            />
+                          ) : (
+                            <User className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium">{getChatPartnerName(chat)}</h3>
+                          <p className="text-sm text-gray-500">
+                            Последнее сообщение: {new Date(chat.updated_at).toLocaleDateString('ru-RU')}
+                          </p>
+                        </div>
+                        {unreadCount > 0 && (
+                          <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             /* Chat Messages */
