@@ -186,7 +186,7 @@ export function Navigation() {
   }, [showProfileMenu, showMobileMenu])
 
   return (
-    <header className="bg-white bg-opacity-10 backdrop-blur-[40px] border-b border-white border-opacity-20 fixed top-0 left-0 right-0 z-[9999] shadow-lg">
+    <header className="bg-black bg-opacity-30 backdrop-blur-[40px] border-b border-white border-opacity-20 fixed top-0 left-0 right-0 z-[9999] shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -210,7 +210,7 @@ export function Navigation() {
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive('/feed')
                     ? 'bg-white bg-opacity-20 text-white border border-white border-opacity-30'
-                    : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10'
+                    : 'text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15'
                 }`}
               >
                 <Home className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function Navigation() {
               
               <button
                 onClick={() => setShowExpertSearch(true)}
-                className="p-2 text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10 transition-colors rounded-lg"
+                className="p-2 text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15 transition-colors rounded-lg"
                 title="Поиск экспертов"
               >
                 <Search className="h-5 w-5" />
@@ -227,7 +227,7 @@ export function Navigation() {
               
               <button
                 onClick={handleOpenChat}
-                className="relative p-2 text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10 transition-colors rounded-lg"
+                className="relative p-2 text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15 transition-colors rounded-lg"
                 title="Чаты"
               >
                 <MessageCircle className="h-5 w-5" />
@@ -243,7 +243,7 @@ export function Navigation() {
             <div className="relative profile-dropdown">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10"
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15"
               >
                 {userProfile?.avatar_url ? (
                   <img
