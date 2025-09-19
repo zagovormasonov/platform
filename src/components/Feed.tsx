@@ -522,8 +522,11 @@ export function Feed() {
                     return (
                       <article 
                         key={article.id} 
-                        className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden border border-white border-opacity-20"
-                        onClick={() => incrementViews(article.id)}
+                        className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden border border-white border-opacity-20 cursor-pointer"
+                        onClick={() => {
+                          incrementViews(article.id)
+                          toggleArticleExpansion(article.id)
+                        }}
                       >
                         {/* Article Image */}
                         {article.image_url && (
@@ -557,19 +560,6 @@ export function Feed() {
                             </div>
                           )}
                           
-                          {/* Expand Button */}
-                          <div className="mb-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                toggleArticleExpansion(article.id)
-                              }}
-                              className="text-white hover:text-white text-opacity-70 hover:text-opacity-100 font-medium text-sm bg-white bg-opacity-10 hover:bg-opacity-20 px-3 py-2 rounded-lg transition-all"
-                            >
-                              Читать полностью
-                            </button>
-                          </div>
-                
                           {/* Author & Meta */}
                           <div className="flex items-start justify-between text-sm text-white text-opacity-70 mb-4">
                             <button

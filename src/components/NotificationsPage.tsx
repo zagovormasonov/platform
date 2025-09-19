@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Bell, BellOff, Calendar, User, Clock, Check, X, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Bell, BellOff, Calendar, User, Clock, Check, X, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { PageLayout } from './PageLayout'
 import { UserProfile } from './UserProfile'
@@ -99,29 +99,6 @@ export function NotificationsPage() {
   }
 
 
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      setUpdatingIds(prev => new Set(prev).add(notificationId))
-
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', notificationId)
-        .eq('user_id', user!.id)
-
-      if (error) throw error
-
-      setNotifications(prev => prev.filter(n => n.id !== notificationId))
-    } catch (error) {
-      console.error('Ошибка при удалении уведомления:', error)
-    } finally {
-      setUpdatingIds(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(notificationId)
-        return newSet
-      })
-    }
-  }
 
   // Управление бронированиями
   const updateBookingStatus = async (bookingId: string, status: 'confirmed' | 'cancelled') => {
@@ -502,14 +479,6 @@ export function NotificationsPage() {
                         </button>
                       )}
                       
-                      <button
-                        onClick={() => deleteNotification(notification.id)}
-                        disabled={updatingIds.has(notification.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Удалить уведомление"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </div>
