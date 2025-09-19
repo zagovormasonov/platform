@@ -1,0 +1,358 @@
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { Bell, BellOff, Calendar, User, Clock, Check, X, Trash2 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import { PageLayout } from './PageLayout'
+
+interface Notification {
+  id: string
+  type: string
+  title: string
+  message: string
+  data: any
+  is_read: boolean
+  created_at: string
+  updated_at: string
+}
+
+export function NotificationsPage() {
+  const { user } = useAuth()
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications()
+    }
+  }, [user])
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      if (!user) {
+        setError('Необходимо авторизоваться')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Ошибка загрузки уведомлений:', error)
+        setError('Не удалось загрузить уведомления')
+        return
+      }
+
+      setNotifications(data || [])
+    } catch (err) {
+      console.error('Ошибка загрузки уведомлений:', err)
+      setError('Произошла ошибка при загрузке')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const markAsRead = async (notificationIds: string[]) => {
+    try {
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev)
+        notificationIds.forEach(id => newSet.add(id))
+        return newSet
+      })
+
+      const { error } = await supabase
+        .rpc('mark_notifications_as_read', {
+          p_notification_ids: notificationIds,
+          p_user_id: user!.id
+        })
+
+      if (error) throw error
+
+      // Обновляем локальное состояние
+      setNotifications(prev => prev.map(notification => 
+        notificationIds.includes(notification.id)
+          ? { ...notification, is_read: true }
+          : notification
+      ))
+    } catch (error) {
+      console.error('Ошибка при пометке как прочитанное:', error)
+    } finally {
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev)
+        notificationIds.forEach(id => newSet.delete(id))
+        return newSet
+      })
+    }
+  }
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadCount = notifications.filter(n => !n.is_read).length
+      if (unreadCount === 0) return
+
+      const { error } = await supabase
+        .rpc('mark_all_notifications_as_read', {
+          p_user_id: user!.id
+        })
+
+      if (error) throw error
+
+      // Обновляем локальное состояние
+      setNotifications(prev => prev.map(notification => 
+        ({ ...notification, is_read: true })
+      ))
+    } catch (error) {
+      console.error('Ошибка при пометке всех как прочитанные:', error)
+    }
+  }
+
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      setUpdatingIds(prev => new Set(prev).add(notificationId))
+
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', user!.id)
+
+      if (error) throw error
+
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+    } catch (error) {
+      console.error('Ошибка при удалении уведомления:', error)
+    } finally {
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(notificationId)
+        return newSet
+      })
+    }
+  }
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'booking_pending':
+        return <Calendar className="h-5 w-5 text-yellow-600" />
+      case 'booking_confirmed':
+        return <Check className="h-5 w-5 text-green-600" />
+      case 'booking_cancelled':
+        return <X className="h-5 w-5 text-red-600" />
+      default:
+        return <Bell className="h-5 w-5 text-blue-600" />
+    }
+  }
+
+  const getNotificationColor = (type: string, isRead: boolean) => {
+    const baseClasses = isRead 
+      ? 'bg-gray-50 border-gray-200' 
+      : 'bg-white border-blue-200 shadow-sm'
+
+    switch (type) {
+      case 'booking_pending':
+        return isRead ? baseClasses : 'bg-yellow-50 border-yellow-200'
+      case 'booking_confirmed':
+        return isRead ? baseClasses : 'bg-green-50 border-green-200'
+      case 'booking_cancelled':
+        return isRead ? baseClasses : 'bg-red-50 border-red-200'
+      default:
+        return baseClasses
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60))
+      return `${diffMinutes} мин назад`
+    } else if (diffHours < 24) {
+      return `${Math.floor(diffHours)} ч назад`
+    } else if (diffDays < 7) {
+      return `${Math.floor(diffDays)} дн назад`
+    } else {
+      return date.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'short',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      })
+    }
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Загрузка уведомлений...</p>
+            </div>
+          </div>
+        </div>
+      </PageLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <PageLayout>
+        <div className="min-h-screen bg-gray-50 py-8">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-red-100">
+                <BellOff className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Ошибка загрузки</h3>
+              <p className="mt-2 text-gray-600">{error}</p>
+              <button
+                onClick={fetchNotifications}
+                className="mt-4 btn-primary"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          </div>
+        </div>
+      </PageLayout>
+    )
+  }
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
+
+  return (
+    <PageLayout>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <Bell className="h-8 w-8 text-blue-600 mr-3" />
+                <h1 className="text-3xl font-bold text-gray-900">Уведомления</h1>
+                {unreadCount > 0 && (
+                  <span className="ml-3 px-2 py-1 bg-red-500 text-white text-sm font-medium rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="btn-secondary text-sm"
+                >
+                  Прочитать все
+                </button>
+              )}
+            </div>
+            <p className="text-gray-600">
+              {notifications.length === 0 
+                ? 'У вас пока нет уведомлений' 
+                : `Всего уведомлений: ${notifications.length}`
+              }
+            </p>
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gray-100">
+                <Bell className="h-6 w-6 text-gray-400" />
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">Нет уведомлений</h3>
+              <p className="mt-2 text-gray-600">
+                Здесь будут отображаться уведомления о бронированиях и других важных событиях
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg border transition-all ${getNotificationColor(notification.type, notification.is_read)}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className={`text-sm font-medium ${notification.is_read ? 'text-gray-700' : 'text-gray-900'}`}>
+                            {notification.title}
+                          </h3>
+                          {!notification.is_read && (
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          )}
+                        </div>
+                        
+                        <p className={`text-sm ${notification.is_read ? 'text-gray-500' : 'text-gray-700'}`}>
+                          {notification.message}
+                        </p>
+                        
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                          <span className="flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatDate(notification.created_at)}
+                          </span>
+                          
+                          {notification.data?.slot_date && (
+                            <span className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {new Date(notification.data.slot_date).toLocaleDateString('ru-RU')}
+                            </span>
+                          )}
+                          
+                          {notification.data?.client_name && (
+                            <span className="flex items-center">
+                              <User className="h-3 w-3 mr-1" />
+                              {notification.data.client_name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 ml-4">
+                      {!notification.is_read && (
+                        <button
+                          onClick={() => markAsRead([notification.id])}
+                          disabled={updatingIds.has(notification.id)}
+                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Пометить как прочитанное"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => deleteNotification(notification.id)}
+                        disabled={updatingIds.has(notification.id)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Удалить уведомление"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </PageLayout>
+  )
+}

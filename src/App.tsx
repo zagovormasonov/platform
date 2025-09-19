@@ -9,6 +9,7 @@ import { ProfilePage } from './components/ProfilePage'
 import { FriendsPage } from './components/FriendsPage'
 import { FavoritesPage } from './components/FavoritesPage'
 import { LikedPage } from './components/LikedPage'
+import { NotificationsPage } from './components/NotificationsPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 function AppContent() {
@@ -87,6 +88,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <LikedPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/notifications" 
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
             </ProtectedRoute>
           } 
         />

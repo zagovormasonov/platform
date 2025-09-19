@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark, Bell } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
@@ -25,6 +25,7 @@ export function Navigation() {
   const [showChat, setShowChat] = useState(false)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [lastViewedTimes, setLastViewedTimes] = useState<Map<string, string>>(new Map())
 
   // Загружаем время последнего просмотра из localStorage при инициализации
@@ -143,9 +144,73 @@ export function Navigation() {
       }
     }
 
+    const fetchUnreadNotificationsCount = async () => {
+      if (!user) {
+        setUnreadNotificationsCount(0)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .rpc('get_unread_notifications_count', { p_user_id: user.id })
+
+        if (error) {
+          console.error('Ошибка получения количества уведомлений:', error)
+          return
+        }
+
+        setUnreadNotificationsCount(data || 0)
+      } catch (err) {
+        console.error('Ошибка подсчета непрочитанных уведомлений:', err)
+      }
+    }
+
     fetchUserProfile()
     fetchUnreadCount()
+    fetchUnreadNotificationsCount()
   }, [user, lastViewedTimes])
+
+  // Подписка на обновления уведомлений через Realtime
+  useEffect(() => {
+    if (!user) return
+
+    const updateNotificationsCount = async () => {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_unread_notifications_count', { p_user_id: user.id })
+
+        if (error) {
+          console.error('Ошибка получения количества уведомлений:', error)
+          return
+        }
+
+        setUnreadNotificationsCount(data || 0)
+      } catch (err) {
+        console.error('Ошибка подсчета непрочитанных уведомлений:', err)
+      }
+    }
+
+    const channel = supabase
+      .channel('notifications_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Обновляем счетчик при любых изменениях в уведомлениях
+          updateNotificationsCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -237,6 +302,19 @@ export function Navigation() {
                   </span>
                 )}
               </button>
+              
+              <Link
+                to="/notifications"
+                className="relative p-2 text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15 transition-colors rounded-lg"
+                title="Уведомления"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </Link>
             </nav>
             
             {/* Desktop Profile Menu */}
@@ -394,6 +472,20 @@ export function Navigation() {
                   </span>
                 )}
               </button>
+              
+              <Link
+                to="/notifications"
+                onClick={() => setShowMobileMenu(false)}
+                className="relative flex items-center space-x-2 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 touch-manipulation"
+              >
+                <Bell className="h-4 w-4" />
+                <span>Уведомления</span>
+                {unreadNotificationsCount > 0 && (
+                  <span className="ml-auto bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </Link>
               
               <button
                 onClick={() => {
