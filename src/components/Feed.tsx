@@ -287,12 +287,6 @@ export function Feed() {
     })
   }
 
-  const getPreviewText = (content: string, isExpanded: boolean) => {
-    if (isExpanded || content.length <= 200) {
-      return content
-    }
-    return content.substring(0, 200) + '...'
-  }
 
   const incrementViews = async (articleId: string) => {
     try {
@@ -363,7 +357,7 @@ export function Feed() {
       
       {/* Content */}
       <div className="relative z-10 pt-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
           <div className="text-center mb-8">
             {/* Title */}
@@ -520,12 +514,10 @@ export function Feed() {
               }).filter(Boolean)}
               
               {/* Сетка обычных карточек */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {displayedArticles
                   .filter(article => !expandedArticles.has(article.id))
                   .map((article) => {
-                    const previewText = getPreviewText(article.content, false)
-                    const shouldShowButton = article.content.length > 200
                     
                     return (
                       <article 
@@ -565,23 +557,18 @@ export function Feed() {
                             </div>
                           )}
                           
-                          {/* Content Preview */}
-                          <div className="prose prose-sm max-w-none mb-4">
-                            <p className="text-white text-opacity-50 leading-relaxed whitespace-pre-wrap">
-                              {previewText}
-                            </p>
-                            {shouldShowButton && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleArticleExpansion(article.id)
-                                }}
-                                className="text-white hover:text-white text-opacity-70 hover:text-opacity-100 font-medium text-sm mt-2"
-                              >
-                                Развернуть
-                              </button>
-                            )}
-                </div>
+                          {/* Expand Button */}
+                          <div className="mb-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleArticleExpansion(article.id)
+                              }}
+                              className="text-white hover:text-white text-opacity-70 hover:text-opacity-100 font-medium text-sm bg-white bg-opacity-10 hover:bg-opacity-20 px-3 py-2 rounded-lg transition-all"
+                            >
+                              Читать полностью
+                            </button>
+                          </div>
                 
                           {/* Author & Meta */}
                           <div className="flex items-start justify-between text-sm text-white text-opacity-70 mb-4">
