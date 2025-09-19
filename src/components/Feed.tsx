@@ -249,12 +249,10 @@ export function Feed() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Header */}
           <div className="text-center mb-8">
-            {/* Title Card */}
-            <div className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg border border-white border-opacity-20 p-6 mb-6 inline-block">
-              <h1 className="text-2xl sm:text-4xl font-bold text-white">
-                Новые статьи из мира духовного развития
-              </h1>
-            </div>
+            {/* Title */}
+            <h1 className="text-2xl sm:text-4xl font-bold text-white mb-6">
+              Новые статьи из мира духовного развития
+            </h1>
             
             {/* Sort Controls */}
             <div className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg border border-white border-opacity-20 p-4 inline-flex space-x-2">

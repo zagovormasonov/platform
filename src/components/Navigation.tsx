@@ -186,7 +186,7 @@ export function Navigation() {
   }, [showProfileMenu, showMobileMenu])
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[9999]">
+    <header className="bg-white bg-opacity-10 backdrop-blur-[40px] border-b border-white border-opacity-20 fixed top-0 left-0 right-0 z-[9999] shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -197,8 +197,8 @@ export function Navigation() {
               className="h-10 w-10 object-contain"
             />
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-bold text-black">SoulSynergy</span>
-              <span className="text-xs text-gray-600">centerra</span>
+              <span className="text-lg sm:text-xl font-bold text-white">SoulSynergy</span>
+              <span className="text-xs text-white text-opacity-70">centerra</span>
             </div>
           </Link>
           
@@ -209,8 +209,8 @@ export function Navigation() {
                 to="/feed"
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive('/feed')
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'bg-white bg-opacity-20 text-white border border-white border-opacity-30'
+                    : 'text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10'
                 }`}
               >
                 <Home className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function Navigation() {
               
               <button
                 onClick={() => setShowExpertSearch(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
+                className="p-2 text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10 transition-colors rounded-lg"
                 title="Поиск экспертов"
               >
                 <Search className="h-5 w-5" />
@@ -227,7 +227,7 @@ export function Navigation() {
               
               <button
                 onClick={handleOpenChat}
-                className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-100"
+                className="relative p-2 text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10 transition-colors rounded-lg"
                 title="Чаты"
               >
                 <MessageCircle className="h-5 w-5" />
@@ -243,7 +243,7 @@ export function Navigation() {
             <div className="relative profile-dropdown">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-white text-opacity-80 hover:text-white hover:bg-white hover:bg-opacity-10"
               >
                 {userProfile?.avatar_url ? (
                   <img
