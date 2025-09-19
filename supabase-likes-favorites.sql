@@ -98,8 +98,8 @@ CREATE TRIGGER trigger_update_likes_count_on_delete
   AFTER DELETE ON public.article_likes
   FOR EACH ROW EXECUTE FUNCTION public.update_article_likes_count();
 
--- Функция для получения статистики лайков статьи
-CREATE OR REPLACE FUNCTION public.get_article_like_status(article_id_input UUID, user_id_input UUID DEFAULT auth.uid())
+-- Функция для получения статистики лайков статьи (с указанием пользователя)
+CREATE OR REPLACE FUNCTION public.get_article_like_status(article_id_input UUID, user_id_input UUID)
 RETURNS JSON AS $$
 DECLARE
   result JSON;
@@ -118,7 +118,43 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Функция для получения статистики лайков статьи (для текущего пользователя)
+CREATE OR REPLACE FUNCTION public.get_article_like_status_current(article_id_input UUID)
+RETURNS JSON AS $$
+DECLARE
+  result JSON;
+  current_user_id UUID;
+BEGIN
+  current_user_id := auth.uid();
+  
+  IF current_user_id IS NULL THEN
+    -- Если пользователь не авторизован, возвращаем только количество лайков
+    SELECT json_build_object(
+      'likes_count', COALESCE(a.likes_count, 0),
+      'is_liked', false,
+      'is_favorited', false
+    ) INTO result
+    FROM public.articles a
+    WHERE a.id = article_id_input;
+  ELSE
+    -- Если пользователь авторизован, возвращаем полную информацию
+    SELECT json_build_object(
+      'likes_count', COALESCE(a.likes_count, 0),
+      'is_liked', CASE WHEN al.id IS NOT NULL THEN true ELSE false END,
+      'is_favorited', CASE WHEN af.id IS NOT NULL THEN true ELSE false END
+    ) INTO result
+    FROM public.articles a
+    LEFT JOIN public.article_likes al ON a.id = al.article_id AND al.user_id = current_user_id
+    LEFT JOIN public.article_favorites af ON a.id = af.article_id AND af.user_id = current_user_id
+    WHERE a.id = article_id_input;
+  END IF;
+  
+  RETURN COALESCE(result, '{"likes_count": 0, "is_liked": false, "is_favorited": false}'::JSON);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Даем права на выполнение функций
 GRANT EXECUTE ON FUNCTION public.update_article_likes_count() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_article_like_status(UUID, UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.get_article_like_status(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_article_like_status_current(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_article_like_status_current(UUID) TO anon;
