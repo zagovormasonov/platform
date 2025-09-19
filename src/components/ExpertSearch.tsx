@@ -260,7 +260,8 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50 pt-20">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+      <div className="flex items-center justify-center min-h-screen px-2 sm:px-4 py-20">
       <div 
         ref={modalRef}
         className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
@@ -585,6 +586,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
           onClose={() => setSelectedExpertId(null)}
         />
       )}
+      </div>
     </div>
   )
 }

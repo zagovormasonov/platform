@@ -96,7 +96,8 @@ export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 pt-20">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+      <div className="flex items-center justify-center min-h-screen px-4 py-20">
       <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -231,6 +232,7 @@ export function ChatModalWebSocket({ isOpen, onClose, recipientId, recipientName
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   )
