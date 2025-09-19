@@ -57,8 +57,8 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             {mode === 'signin' 
-              ? 'Добро пожаловать в платформу духовного опыта' 
-              : 'Присоединяйтесь к сообществу духовных искателей'
+              ? 'Добро пожаловать в Centerra SoulSynergy' 
+              : 'Присоединяйтесь к сообществу в Centerra SoulSynergy'
             }
           </p>
         </div>
