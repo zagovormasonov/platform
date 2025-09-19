@@ -48,7 +48,14 @@ interface ExpertCalendarProps {
 export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendarProps) {
   const { user } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([])
+  const [timeSlots, setTimeSlotsState] = useState<TimeSlot[]>([])
+  
+  // Обертка для setTimeSlots с логированием
+  const setTimeSlots = (slots: TimeSlot[]) => {
+    console.log('🔧 setTimeSlots вызван с', slots.length, 'слотами')
+    console.log('📊 Уникальные даты в новых слотах:', [...new Set(slots.map(s => s.slot_date))])
+    setTimeSlotsState(slots)
+  }
   const [services, setServices] = useState<Service[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,6 +89,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
 
   // Загрузка данных
   useEffect(() => {
+    console.log('🔄 useEffect loadData срабатывает для:', { expertId, currentDate: currentDate.toISOString(), weekDates: weekDates.map(d => d.toISOString().split('T')[0]) })
     loadData()
   }, [expertId, currentDate])
 
@@ -584,10 +592,39 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                 Создать тестовое бронирование
               </button>
               <button
-                onClick={() => loadData()}
+                onClick={() => {
+                  console.log('🔄 ПРИНУДИТЕЛЬНАЯ ПЕРЕЗАГРУЗКА ДАННЫХ')
+                  console.log('Текущие параметры:', { expertId, currentDate: currentDate.toISOString() })
+                  console.log('Текущее состояние timeSlots:', timeSlots.length)
+                  loadData()
+                }}
                 className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
               >
                 Перезагрузить данные
+              </button>
+              <button
+                onClick={async () => {
+                  console.log('🚀 ПРЯМОЙ ТЕСТ loadTimeSlots')
+                  const startDate = weekDates[0].toISOString().split('T')[0]
+                  const endDate = weekDates[6].toISOString().split('T')[0]
+                  console.log('Тестовые параметры:', { expertId, startDate, endDate })
+                  
+                  try {
+                    const { data, error } = await supabase
+                      .from('time_slots')
+                      .select('*')
+                      .eq('expert_id', expertId)
+                      .gte('slot_date', startDate)
+                      .lte('slot_date', endDate)
+                    
+                    console.log('🔍 Прямой запрос к БД результат:', { error, count: data?.length, data: data?.slice(0, 3) })
+                  } catch (err) {
+                    console.error('❌ Ошибка прямого теста:', err)
+                  }
+                }}
+                className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+              >
+                Тест БД
               </button>
               <button
                 onClick={() => {
