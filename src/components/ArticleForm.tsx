@@ -61,6 +61,22 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
       setUploading(true)
       setError('')
 
+      // Сначала попробуем создать bucket если его нет
+      const { data: buckets } = await supabase.storage.listBuckets()
+      const articlesBucket = buckets?.find(bucket => bucket.id === 'articles')
+      
+      if (!articlesBucket) {
+        console.log('Создаем bucket articles...')
+        const { error: bucketError } = await supabase.storage.createBucket('articles', {
+          public: true
+        })
+        if (bucketError) {
+          console.warn('Не удалось создать bucket программно:', bucketError)
+          setError('Bucket "articles" не существует. Пожалуйста, создайте его в Supabase Dashboard -> Storage')
+          return
+        }
+      }
+
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/${Date.now()}.${fileExt}`
 
@@ -75,9 +91,14 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
         .getPublicUrl(fileName)
 
       setImageUrl(publicUrl)
+      setError('') // Очищаем ошибку при успешной загрузке
     } catch (error: any) {
       console.error('Ошибка загрузки изображения:', error)
-      setError('Не удалось загрузить изображение: ' + error.message)
+      if (error.message?.includes('Bucket not found')) {
+        setError('Bucket для изображений не настроен. Пожалуйста, выполните SQL-скрипт supabase-storage-articles.sql')
+      } else {
+        setError('Не удалось загрузить изображение: ' + error.message)
+      }
     } finally {
       setUploading(false)
     }

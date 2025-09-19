@@ -311,7 +311,7 @@ export function Feed() {
                 return (
                   <article 
                     key={article.id} 
-                    className="bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden"
+                    className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-white border-opacity-20"
                     onClick={() => incrementViews(article.id)}
                   >
                     {/* Article Image */}
@@ -327,7 +327,7 @@ export function Feed() {
                     
                     <div className="p-6">
                       {/* Title */}
-                      <h2 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">
+                      <h2 className="text-lg font-bold text-white mb-3 line-clamp-2">
                         {article.title}
                       </h2>
                       
@@ -337,7 +337,7 @@ export function Feed() {
                           {article.tags.slice(0, 5).map((tag, index) => (
                             <span
                               key={index}
-                              className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full"
+                              className="px-2 py-1 bg-white bg-opacity-20 text-white text-xs rounded-full border border-white border-opacity-30"
                             >
                               <Tag className="h-3 w-3 inline mr-1" />
                               {tag}
@@ -348,7 +348,7 @@ export function Feed() {
                       
                       {/* Content Preview */}
                       <div className="prose prose-sm max-w-none mb-4">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-white text-opacity-50 leading-relaxed whitespace-pre-wrap">
                           {previewText}
                         </p>
                         {shouldShowButton && (
@@ -357,7 +357,7 @@ export function Feed() {
                               e.stopPropagation()
                               toggleArticleExpansion(article.id)
                             }}
-                            className="text-indigo-600 hover:text-indigo-800 font-medium text-sm mt-2"
+                            className="text-white hover:text-white text-opacity-70 hover:text-opacity-100 font-medium text-sm mt-2"
                           >
                             {isExpanded ? 'Свернуть' : 'Развернуть'}
                           </button>
@@ -365,15 +365,15 @@ export function Feed() {
                       </div>
                       
                       {/* Author & Meta */}
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <div className="flex items-start justify-between text-sm text-white text-opacity-70 mb-4">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
                             handleAuthorClick(article.author_id)
                           }}
-                          className="flex items-center space-x-2 hover:text-indigo-600 transition-colors"
+                          className="flex items-center space-x-2 hover:text-white hover:text-opacity-100 transition-colors"
                         >
-                          <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
                             {article.profiles?.avatar_url ? (
                               <img
                                 src={article.profiles.avatar_url}
@@ -381,19 +381,19 @@ export function Feed() {
                                 className="w-6 h-6 object-cover"
                               />
                             ) : (
-                              <User className="h-3 w-3 text-gray-400" />
+                              <User className="h-3 w-3 text-white" />
                             )}
                           </div>
-                          <span className="truncate">{getAuthorName(article.profiles)}</span>
+                          <span className="truncate text-white">{getAuthorName(article.profiles)}</span>
                         </button>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex flex-col space-y-1 text-right">
                           {article.views_count && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center justify-end space-x-1">
                               <Eye className="h-3 w-3" />
                               <span>{article.views_count}</span>
                             </div>
                           )}
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center justify-end space-x-1">
                             <Calendar className="h-3 w-3" />
                             <span>{new Date(article.created_at).toLocaleDateString('ru-RU')}</span>
                           </div>
