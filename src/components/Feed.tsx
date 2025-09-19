@@ -35,6 +35,7 @@ export function Feed() {
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [hasMore, setHasMore] = useState(true)
   const [expandedArticles, setExpandedArticles] = useState<Set<string>>(new Set())
+  const [fullScreenArticle, setFullScreenArticle] = useState<string | null>(null)
   const [displayCount, setDisplayCount] = useState(30) // Сколько статей показывать
   
   const ARTICLES_PER_PAGE = 30
@@ -163,8 +164,10 @@ export function Feed() {
       const newSet = new Set(prev)
       if (newSet.has(articleId)) {
         newSet.delete(articleId)
+        setFullScreenArticle(null) // Убираем полноэкранный режим
       } else {
         newSet.add(articleId)
+        setFullScreenArticle(articleId) // Включаем полноэкранный режим
       }
       return newSet
     })
@@ -302,16 +305,127 @@ export function Feed() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="relative">
+              {/* Полноэкранная статья */}
+              {fullScreenArticle && (
+                <div className="fixed inset-0 z-[100] bg-black bg-opacity-50 flex items-center justify-center p-4 pt-20">
+                  <div className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-2xl border border-white border-opacity-20 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                    {(() => {
+                      const article = displayedArticles.find(a => a.id === fullScreenArticle)
+                      if (!article) return null
+                      
+                      const isExpanded = expandedArticles.has(article.id)
+                      const previewText = getPreviewText(article.content, isExpanded)
+                      
+                      return (
+                        <div className="p-8 overflow-y-auto max-h-full">
+                          {/* Close Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleArticleExpansion(article.id)
+                            }}
+                            className="absolute top-4 right-4 text-white hover:text-gray-300 text-2xl z-10"
+                          >
+                            ✕
+                          </button>
+                          
+                          {/* Article Image */}
+                          {article.image_url && (
+                            <div className="h-64 mb-6 overflow-hidden rounded-lg">
+                              <img
+                                src={article.image_url}
+                                alt={article.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Title */}
+                          <h1 className="text-2xl font-bold text-white mb-4">
+                            {article.title}
+                          </h1>
+                          
+                          {/* Tags */}
+                          {article.tags && article.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-6">
+                              {article.tags.slice(0, 5).map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full border border-white border-opacity-30"
+                                >
+                                  <Tag className="h-4 w-4 inline mr-1" />
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Content */}
+                          <div className="prose prose-lg max-w-none mb-6">
+                            <p className="text-white text-opacity-80 leading-relaxed whitespace-pre-wrap text-base">
+                              {previewText}
+                            </p>
+                          </div>
+                          
+                          {/* Author & Meta */}
+                          <div className="flex items-center justify-between text-white text-opacity-70 border-t border-white border-opacity-20 pt-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAuthorClick(article.author_id)
+                              }}
+                              className="flex items-center space-x-3 hover:text-white hover:text-opacity-100 transition-colors"
+                            >
+                              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                                {article.profiles?.avatar_url ? (
+                                  <img
+                                    src={article.profiles.avatar_url}
+                                    alt={getAuthorName(article.profiles)}
+                                    className="w-8 h-8 object-cover"
+                                  />
+                                ) : (
+                                  <User className="h-4 w-4 text-white" />
+                                )}
+                              </div>
+                              <span className="text-white text-lg">{getAuthorName(article.profiles)}</span>
+                            </button>
+                            <div className="flex flex-col items-end space-y-1">
+                              {article.views_count && (
+                                <div className="flex items-center space-x-2">
+                                  <Eye className="h-4 w-4" />
+                                  <span>{article.views_count}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>{new Date(article.created_at).toLocaleDateString('ru-RU')}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
+              )}
+              
+              {/* Сетка карточек */}
+              <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-500 ${
+                fullScreenArticle ? 'blur-sm scale-95 opacity-50' : ''
+              }`}>
               {displayedArticles.map((article) => {
                 const isExpanded = expandedArticles.has(article.id)
                 const previewText = getPreviewText(article.content, isExpanded)
                 const shouldShowButton = article.content.length > 200
+                const isFullScreen = fullScreenArticle === article.id
                 
                 return (
                   <article 
                     key={article.id} 
-                    className="bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-white border-opacity-20"
+                    className={`bg-white bg-opacity-10 backdrop-blur-[40px] rounded-lg shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden border border-white border-opacity-20 ${
+                      isFullScreen ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                    }`}
                     onClick={() => incrementViews(article.id)}
                   >
                     {/* Article Image */}
@@ -403,6 +517,7 @@ export function Feed() {
                   </article>
                 )
               })}
+              </div>
             </div>
           )}
           

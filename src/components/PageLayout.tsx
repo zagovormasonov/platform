@@ -9,7 +9,7 @@ export function PageLayout({ children }: PageLayoutProps) {
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pb-4 sm:pb-8">
+      <main className="pt-16 pb-4 sm:pb-8">
         {children}
       </main>
     </div>
