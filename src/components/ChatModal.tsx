@@ -715,13 +715,17 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                 onScroll={handleScroll}
               >
                 {messages.map((message) => {
+                  const isFromCurrentUser = message.sender_id === user?.id
+                  const isFromOtherUser = !isFromCurrentUser
+                  
                   console.log('🔍 Отображение сообщения:', {
                     messageId: message.id,
                     messageSenderId: message.sender_id,
                     messageSenderIdType: typeof message.sender_id,
                     currentUserId: user?.id,
                     currentUserIdType: typeof user?.id,
-                    isFromCurrentUser: message.sender_id === user?.id,
+                    isFromCurrentUser,
+                    isFromOtherUser,
                     strictEqual: message.sender_id === user?.id,
                     looseEqual: message.sender_id == user?.id,
                     messageContent: message.content,
@@ -731,10 +735,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                   return (
                   <div
                     key={message.id}
-                    className={`flex items-end space-x-2 ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end space-x-2 ${isFromCurrentUser ? 'justify-end' : 'justify-start'}`}
                   >
                     {/* Аватар для сообщений от других пользователей */}
-                    {message.sender_id !== user?.id && (
+                    {isFromOtherUser && (
                       <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                         {message.sender_profile?.avatar_url ? (
                           <img
@@ -750,14 +754,14 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                     
                     <div
                       className={`max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-lg break-words ${
-                        message.sender_id === user?.id
+                        isFromCurrentUser
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-900'
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
                       <p className={`text-xs mt-1 ${
-                        message.sender_id === user?.id ? 'text-blue-100' : 'text-gray-500'
+                        isFromCurrentUser ? 'text-blue-100' : 'text-gray-500'
                       }`}>
                         {formatTime(message.created_at)}
                       </p>
