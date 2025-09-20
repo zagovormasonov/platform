@@ -740,10 +740,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                     {/* Аватар для сообщений от других пользователей */}
                     {isFromOtherUser && (
                       <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {message.sender_profile?.avatar_url ? (
+                        {getCurrentChatPartner()?.avatar_url ? (
                           <img
-                            src={message.sender_profile.avatar_url}
-                            alt={message.sender_profile.full_name || 'Пользователь'}
+                            src={getCurrentChatPartner()?.avatar_url || ''}
+                            alt={getCurrentChatPartner()?.full_name || 'Пользователь'}
                             className="w-full h-full object-cover"
                           />
                         ) : (
