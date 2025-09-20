@@ -277,6 +277,28 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const fetchMessages = async (chatId: string, isPeriodicUpdate = false) => {
     console.log('Загрузка сообщений для чата:', chatId, isPeriodicUpdate ? '(периодическое обновление)' : '')
     
+    // Проверяем соединение с Supabase
+    try {
+      const { error: testError } = await supabase
+        .from('messages')
+        .select('id')
+        .limit(1)
+      
+      if (testError) {
+        console.error('❌ Проблема с соединением Supabase:', testError)
+        if (!isPeriodicUpdate) {
+          alert('Проблема с соединением. Проверьте интернет-соединение.')
+        }
+        return
+      }
+    } catch (err) {
+      console.error('❌ Ошибка соединения:', err)
+      if (!isPeriodicUpdate) {
+        alert('Ошибка соединения с сервером. Проверьте интернет-соединение.')
+      }
+      return
+    }
+    
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -289,7 +311,17 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
 
       if (error) {
         console.error('Ошибка загрузки сообщений:', error)
-        alert(`Ошибка загрузки сообщений: ${error.message}`)
+        console.log('🔍 Детали ошибки:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
+        
+        // Не показываем alert при периодическом обновлении
+        if (!isPeriodicUpdate) {
+          alert(`Ошибка загрузки сообщений: ${error.message}`)
+        }
         return
       }
 
