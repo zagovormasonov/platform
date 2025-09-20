@@ -106,11 +106,11 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
       
-      // Добавляем более частое периодическое обновление как fallback (каждые 5 секунд)
+      // Добавляем более частое периодическое обновление как fallback (каждые 10 секунд)
       const interval = setInterval(() => {
         console.log('🔄 Периодическое обновление сообщений (fallback)')
         fetchMessages(currentChatId, true)
-      }, 5000)
+      }, 10000)
       
       // Проверка соединения каждые 30 секунд
       const connectionCheck = setInterval(() => {
@@ -319,10 +319,16 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     console.log('🔍 Подписка на сообщения для чата:', chatId)
     
     let reconnectAttempts = 0
-    const maxReconnectAttempts = 5
+    const maxReconnectAttempts = 3 // Уменьшаем количество попыток
     let reconnectTimeout: NodeJS.Timeout | null = null
+    let isSubscribed = false
     
     const createSubscription = () => {
+      if (isSubscribed) {
+        console.log('⚠️ Подписка уже активна, пропускаем создание новой')
+        return null
+      }
+      
       console.log(`🔄 Попытка подключения ${reconnectAttempts + 1}/${maxReconnectAttempts}`)
       
       const channel = supabase
@@ -367,17 +373,21 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
             console.log('✅ Realtime подписка активна')
             setRealtimeStatus('connected')
             reconnectAttempts = 0 // Сбрасываем счетчик при успешном подключении
+            isSubscribed = true
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Ошибка Realtime подписки')
+            console.warn('⚠️ Ошибка Realtime подписки - переходим на fallback режим')
             setRealtimeStatus('disconnected')
-            attemptReconnect()
+            isSubscribed = false
+            // Не пытаемся переподключиться при ошибке канала - используем fallback
           } else if (status === 'TIMED_OUT') {
-            console.warn('⏰ Realtime подписка истекла')
+            console.warn('⏰ Realtime подписка истекла - переходим на fallback режим')
             setRealtimeStatus('disconnected')
-            attemptReconnect()
+            isSubscribed = false
+            // Не пытаемся переподключиться при таймауте - используем fallback
           } else if (status === 'CLOSED') {
-            console.warn('🔒 Realtime подписка закрыта')
+            console.log('🔒 Realtime подписка закрыта')
             setRealtimeStatus('disconnected')
+            isSubscribed = false
             attemptReconnect()
           }
         })
@@ -388,7 +398,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     const attemptReconnect = () => {
       if (reconnectAttempts < maxReconnectAttempts) {
         reconnectAttempts++
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000) // Экспоненциальная задержка
+        const delay = Math.min(5000 * reconnectAttempts, 30000) // Увеличиваем задержки
         
         console.log(`🔄 Переподключение через ${delay}ms (попытка ${reconnectAttempts}/${maxReconnectAttempts})`)
         
@@ -398,6 +408,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       } else {
         console.error('❌ Максимальное количество попыток переподключения достигнуто')
         setRealtimeStatus('disconnected')
+        console.log('🔄 Переходим на режим периодического обновления')
       }
     }
     
@@ -405,10 +416,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     
     return () => {
       console.log('🔌 Отписываемся от канала:', chatId)
+      isSubscribed = false
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout)
       }
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }
 
