@@ -106,18 +106,39 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       fetchMessages(currentChatId)
       const unsubscribe = subscribeToMessages(currentChatId)
       
-      // Добавляем периодическое обновление как fallback (каждые 10 секунд)
+      // Добавляем более частое периодическое обновление как fallback (каждые 5 секунд)
       const interval = setInterval(() => {
         console.log('🔄 Периодическое обновление сообщений (fallback)')
-        fetchMessages(currentChatId, true) // Передаем флаг периодического обновления
-      }, 10000)
+        fetchMessages(currentChatId, true)
+      }, 5000)
+      
+      // Проверка соединения каждые 30 секунд
+      const connectionCheck = setInterval(() => {
+        console.log('🔍 Проверка соединения с Supabase')
+        supabase
+          .from('messages')
+          .select('id')
+          .limit(1)
+          .then(({ error }) => {
+            if (error) {
+              console.error('❌ Проблема с соединением:', error)
+              setRealtimeStatus('disconnected')
+            } else {
+              console.log('✅ Соединение с Supabase работает')
+              if (realtimeStatus === 'disconnected') {
+                setRealtimeStatus('connected')
+              }
+            }
+          })
+      }, 30000)
       
       return () => {
         unsubscribe()
         clearInterval(interval)
+        clearInterval(connectionCheck)
       }
     }
-  }, [currentChatId])
+  }, [currentChatId, realtimeStatus])
 
   useEffect(() => {
     if (recipientId && user && isOpen) {
@@ -297,56 +318,96 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const subscribeToMessages = (chatId: string) => {
     console.log('🔍 Подписка на сообщения для чата:', chatId)
     
-    // Проверяем подключение к Supabase
-    console.log('🔗 Supabase подключение проверено')
+    let reconnectAttempts = 0
+    const maxReconnectAttempts = 5
+    let reconnectTimeout: NodeJS.Timeout | null = null
     
-    const channel = supabase
-      .channel(`messages:${chatId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `chat_id=eq.${chatId}`
-        },
-        (payload) => {
-          console.log('📨 Получено новое сообщение через Realtime:', payload)
-          const newMessage = payload.new as Message
+    const createSubscription = () => {
+      console.log(`🔄 Попытка подключения ${reconnectAttempts + 1}/${maxReconnectAttempts}`)
+      
+      const channel = supabase
+        .channel(`messages:${chatId}-${Date.now()}`) // Уникальное имя канала
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `chat_id=eq.${chatId}`
+          },
+          (payload) => {
+            console.log('📨 Получено новое сообщение через Realtime:', payload)
+            const newMessage = payload.new as Message
+            
+            // Проверяем, что сообщение еще не добавлено
+            setMessages(prev => {
+              const exists = prev.some(msg => msg.id === newMessage.id)
+              if (exists) {
+                console.log('⚠️ Сообщение уже существует, пропускаем')
+                return prev
+              }
+              
+              const updated = [...prev, newMessage]
+              console.log('📝 Обновляем список сообщений:', updated)
+              setLastMessageCount(updated.length)
+              return updated
+            })
+            
+            setIsNewMessage(true)
+            fetchChats()
+            
+            // Сбрасываем счетчик переподключений при успешном получении сообщения
+            reconnectAttempts = 0
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 Статус подписки Realtime:', status)
           
-          // Добавляем новое сообщение в список
-          setMessages(prev => {
-            const updated = [...prev, newMessage]
-            console.log('📝 Обновляем список сообщений:', updated)
-            setLastMessageCount(updated.length) // Обновляем счетчик
-            return updated
-          })
-          
-          // Устанавливаем флаг нового сообщения для автоматической прокрутки
-          setIsNewMessage(true)
-          
-          fetchChats() // Обновляем список чатов
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Статус подписки Realtime:', status)
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Realtime подписка активна')
-          setRealtimeStatus('connected')
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Ошибка Realtime подписки')
-          setRealtimeStatus('disconnected')
-        } else if (status === 'TIMED_OUT') {
-          console.warn('⏰ Realtime подписка истекла')
-          setRealtimeStatus('disconnected')
-        } else if (status === 'CLOSED') {
-          console.warn('🔒 Realtime подписка закрыта')
-          setRealtimeStatus('disconnected')
-        }
-      })
-
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Realtime подписка активна')
+            setRealtimeStatus('connected')
+            reconnectAttempts = 0 // Сбрасываем счетчик при успешном подключении
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Ошибка Realtime подписки')
+            setRealtimeStatus('disconnected')
+            attemptReconnect()
+          } else if (status === 'TIMED_OUT') {
+            console.warn('⏰ Realtime подписка истекла')
+            setRealtimeStatus('disconnected')
+            attemptReconnect()
+          } else if (status === 'CLOSED') {
+            console.warn('🔒 Realtime подписка закрыта')
+            setRealtimeStatus('disconnected')
+            attemptReconnect()
+          }
+        })
+      
+      return channel
+    }
+    
+    const attemptReconnect = () => {
+      if (reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000) // Экспоненциальная задержка
+        
+        console.log(`🔄 Переподключение через ${delay}ms (попытка ${reconnectAttempts}/${maxReconnectAttempts})`)
+        
+        reconnectTimeout = setTimeout(() => {
+          createSubscription()
+        }, delay)
+      } else {
+        console.error('❌ Максимальное количество попыток переподключения достигнуто')
+        setRealtimeStatus('disconnected')
+      }
+    }
+    
+    const channel = createSubscription()
+    
     return () => {
       console.log('🔌 Отписываемся от канала:', chatId)
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+      }
       supabase.removeChannel(channel)
     }
   }
@@ -387,38 +448,77 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   const sendMessage = async () => {
     if (!newMessage.trim() || !currentChatId || !user || sending) return
 
-    console.log('Отправка сообщения:', {
-      message: newMessage.trim(),
+    const messageContent = newMessage.trim()
+    console.log('📤 Отправка сообщения:', {
+      message: messageContent,
       chatId: currentChatId,
-      userId: user.id
+      userId: user.id,
+      userEmail: user.email
     })
 
     try {
       setSending(true)
+      
+      // Добавляем сообщение локально для мгновенного отображения
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        chat_id: currentChatId,
+        sender_id: user.id,
+        content: messageContent,
+        message_type: 'text',
+        is_read: false,
+        created_at: new Date().toISOString(),
+        sender_profile: {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || 'Вы',
+          avatar_url: user.user_metadata?.avatar_url || null
+        }
+      }
+      
+      setMessages(prev => [...prev, tempMessage])
+      setNewMessage('')
+      
+      // Отправляем на сервер
       const { data, error } = await supabase
         .from('messages')
         .insert({
           chat_id: currentChatId,
           sender_id: user.id,
-          content: newMessage.trim()
+          content: messageContent
         })
         .select()
 
       if (error) {
         console.error('Ошибка отправки сообщения:', error)
+        
+        // Удаляем временное сообщение при ошибке
+        setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id))
+        
         alert(`Ошибка отправки сообщения: ${error.message}`)
         return
       }
 
       console.log('Сообщение отправлено успешно:', data)
-      setNewMessage('')
       
-      // Принудительно обновляем сообщения после отправки с небольшой задержкой
-      setTimeout(async () => {
-        await fetchMessages(currentChatId)
-      }, 100)
+      // Заменяем временное сообщение на реальное
+      if (data && data[0]) {
+        const realMessage = data[0] as Message
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === tempMessage.id ? realMessage : msg
+          )
+        )
+      }
+      
+      // Обновляем список чатов
+      fetchChats()
+      
     } catch (err) {
       console.error('Ошибка отправки сообщения:', err)
+      
+      // Удаляем временное сообщение при ошибке
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      
       alert('Произошла ошибка при отправке сообщения')
     } finally {
       setSending(false)
@@ -458,11 +558,10 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-      <div className="flex items-center justify-center min-h-screen px-4 py-20">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-2">
             <MessageCircle className="h-6 w-6 text-blue-600" />
             <h2 className="text-xl font-bold text-gray-900">
@@ -477,7 +576,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
           </button>
         </div>
 
-        <div className="flex h-[calc(90vh-80px)]">
+        <div className="flex-1 flex min-h-0">
           {/* Chats List */}
           {activeTab === 'chats' && (
             <div className="w-full md:w-80 border-r bg-gray-50">
@@ -547,9 +646,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
 
           {/* Chat Messages */}
           {activeTab === 'chat' && currentChatId && (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Chat Header */}
-              <div className="p-4 border-b bg-gray-50">
+              <div className="p-4 border-b bg-gray-50 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <button
@@ -575,7 +674,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                       </h3>
                       <p className="text-sm text-gray-500">
                         {realtimeStatus === 'connected' ? '🟢 Realtime активен' : 
-                         realtimeStatus === 'disconnected' ? '🔴 Realtime отключен' : 
+                         realtimeStatus === 'disconnected' ? '🔴 Realtime отключен - используем fallback' : 
                          '🟡 Подключение...'}
                       </p>
                     </div>
@@ -586,10 +685,19 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
               {/* Messages */}
               <div 
                 id="messages-container" 
-                className="flex-1 overflow-y-auto p-4 space-y-4"
+                className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
                 onScroll={handleScroll}
               >
-                {messages.map((message) => (
+                {messages.map((message) => {
+                  console.log('🔍 Отображение сообщения:', {
+                    messageId: message.id,
+                    messageSenderId: message.sender_id,
+                    currentUserId: user?.id,
+                    isFromCurrentUser: message.sender_id === user?.id,
+                    messageContent: message.content
+                  })
+                  
+                  return (
                   <div
                     key={message.id}
                     className={`flex items-end space-x-2 ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
@@ -610,7 +718,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                     )}
                     
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      className={`max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-lg break-words ${
                         message.sender_id === user?.id
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-900'
@@ -624,12 +732,13 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                       </p>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t bg-gray-50">
+              <div className="p-4 border-t bg-gray-50 flex-shrink-0">
                 <div className="flex space-x-2">
                   <textarea
                     value={newMessage}
@@ -653,7 +762,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
             </div>
           )}
         </div>
-      </div>
       </div>
     </div>
   )
