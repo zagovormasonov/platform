@@ -558,8 +558,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 min-h-screen overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] max-h-[90vh] flex flex-col my-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-2">
