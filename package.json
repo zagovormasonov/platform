@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "clsx": "^2.0.0",
+    "cors": "^2.8.5",
+    "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
-    "@supabase/supabase-js": "^2.38.4",
-    "lucide-react": "^0.294.0",
-    "clsx": "^2.0.0"
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.7.4"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

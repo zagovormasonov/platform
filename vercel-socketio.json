@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "socketio-server-vercel.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/socket.io/(.*)",
+      "dest": "/socketio-server-vercel.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/socketio-server-vercel.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "socketio-server-vercel.js": {
+      "maxDuration": 30
+    }
+  }
+}

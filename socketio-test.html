@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Chat Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .message.own {
+            background-color: #e3f2fd;
+        }
+        .message.other {
+            background-color: #f5f5f5;
+        }
+        input, button {
+            padding: 8px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Socket.IO Chat Test</h1>
+    
+    <div id="status" class="status disconnected">
+        ❌ Не подключен
+    </div>
+    
+    <div>
+        <input type="text" id="userId" placeholder="Ваш ID пользователя" value="test-user-1">
+        <button onclick="connect()">Подключиться</button>
+        <button onclick="disconnect()">Отключиться</button>
+    </div>
+    
+    <div>
+        <input type="text" id="chatId" placeholder="ID чата" value="test-chat-1">
+        <button onclick="joinChat()">Присоединиться к чату</button>
+        <button onclick="leaveChat()">Покинуть чат</button>
+    </div>
+    
+    <div class="messages" id="messages"></div>
+    
+    <div>
+        <input type="text" id="messageInput" placeholder="Введите сообщение..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+    
+    <div>
+        <button onclick="ping()">🏓 Ping</button>
+        <button onclick="getActiveUsers()">👥 Активные пользователи</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        let currentUserId = null;
+        let currentChatId = null;
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                alert('Введите ID пользователя');
+                return;
+            }
+
+            currentUserId = userId;
+            
+            socket = io('https://platform-ruby-kappa.vercel.app', {
+                auth: {
+                    userId: userId
+                }
+            });
+
+            socket.on('connect', () => {
+                updateStatus('✅ Подключен', 'connected');
+                addMessage('system', `Подключен как ${userId}`);
+            });
+
+            socket.on('disconnect', (reason) => {
+                updateStatus('❌ Отключен: ' + reason, 'disconnected');
+                addMessage('system', `Отключен: ${reason}`);
+            });
+
+            socket.on('connected', (data) => {
+                addMessage('system', `Сервер подтвердил подключение: ${JSON.stringify(data)}`);
+            });
+
+            socket.on('new_message', (message) => {
+                addMessage('other', `${message.senderId}: ${message.content}`);
+            });
+
+            socket.on('message_sent', (data) => {
+                addMessage('system', `Сообщение отправлено: ${data.messageId}`);
+            });
+
+            socket.on('user_joined_chat', (data) => {
+                addMessage('system', `Пользователь ${data.userId} присоединился к чату ${data.chatId}`);
+            });
+
+            socket.on('user_left_chat', (data) => {
+                addMessage('system', `Пользователь ${data.userId} покинул чат ${data.chatId}`);
+            });
+
+            socket.on('active_users', (data) => {
+                addMessage('system', `Активные пользователи: ${data.users.join(', ')} (${data.count})`);
+            });
+
+            socket.on('pong', (data) => {
+                addMessage('system', `🏓 Pong получен: ${data.timestamp}`);
+            });
+
+            socket.on('error', (error) => {
+                addMessage('system', `❌ Ошибка: ${error.message || error}`);
+            });
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                currentUserId = null;
+                currentChatId = null;
+            }
+        }
+
+        function joinChat() {
+            const chatId = document.getElementById('chatId').value;
+            if (!socket || !chatId) {
+                alert('Сначала подключитесь и введите ID чата');
+                return;
+            }
+
+            currentChatId = chatId;
+            socket.emit('join_chat', { chatId });
+            addMessage('system', `Присоединяемся к чату ${chatId}`);
+        }
+
+        function leaveChat() {
+            if (!socket || !currentChatId) {
+                alert('Сначала присоединитесь к чату');
+                return;
+            }
+
+            socket.emit('leave_chat', { chatId: currentChatId });
+            addMessage('system', `Покидаем чат ${currentChatId}`);
+            currentChatId = null;
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+            
+            if (!socket || !currentChatId || !content) {
+                alert('Подключитесь к чату и введите сообщение');
+                return;
+            }
+
+            socket.emit('send_message', {
+                chatId: currentChatId,
+                content: content
+            });
+
+            addMessage('own', `Вы: ${content}`);
+            messageInput.value = '';
+        }
+
+        function ping() {
+            if (!socket) {
+                alert('Сначала подключитесь');
+                return;
+            }
+
+            socket.emit('ping');
+            addMessage('system', '🏓 Ping отправлен');
+        }
+
+        function getActiveUsers() {
+            if (!socket) {
+                alert('Сначала подключитесь');
+                return;
+            }
+
+            socket.emit('get_active_users');
+            addMessage('system', 'Запрос активных пользователей...');
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function updateStatus(text, className) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+
+        function addMessage(type, text) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Автоматическое подключение при загрузке страницы
+        window.onload = function() {
+            addMessage('system', 'Страница загружена. Введите ID пользователя и нажмите "Подключиться"');
+        };
+    </script>
+</body>
+</html>
