@@ -333,17 +333,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
         return
       }
 
-      console.log('📥 Загружены сообщения:', {
-        chatId,
-        messageCount: data?.length || 0,
-        messages: data?.map(msg => ({
-          id: msg.id,
-          senderId: msg.sender_id,
-          senderIdType: typeof msg.sender_id,
-          content: msg.content,
-          senderProfile: msg.sender_profile
-        }))
-      })
+      console.log('📥 Загружены сообщения:', data?.length || 0, 'сообщений')
       setMessages(data || [])
       setLastMessageCount(newMessageCount)
       
@@ -505,14 +495,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
     if (!newMessage.trim() || !currentChatId || !user || sending) return
 
     const messageContent = newMessage.trim()
-    console.log('📤 Отправка сообщения:', {
-      message: messageContent,
-      chatId: currentChatId,
-      userId: user.id,
-      userIdType: typeof user.id,
-      userEmail: user.email,
-      userMetadata: user.user_metadata
-    })
 
     try {
       setSending(true)
@@ -749,20 +731,6 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                 {messages.map((message) => {
                   const isFromCurrentUser = message.sender_id === user?.id
                   const isFromOtherUser = !isFromCurrentUser
-                  
-                  console.log('🔍 Отображение сообщения:', {
-                    messageId: message.id,
-                    messageSenderId: message.sender_id,
-                    messageSenderIdType: typeof message.sender_id,
-                    currentUserId: user?.id,
-                    currentUserIdType: typeof user?.id,
-                    isFromCurrentUser,
-                    isFromOtherUser,
-                    strictEqual: message.sender_id === user?.id,
-                    looseEqual: message.sender_id == user?.id,
-                    messageContent: message.content,
-                    senderProfile: message.sender_profile
-                  })
                   
                   return (
                   <div
