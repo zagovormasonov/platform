@@ -5,7 +5,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
 import { UserProfile } from './UserProfile'
-import { ChatModalWebSocket } from './ChatModalWebSocket'
+import { ChatModal } from './ChatModal'
+import { UserSelector } from './UserSelector'
 import { supabase } from '../lib/supabase'
 
 interface UserProfile {
@@ -23,6 +24,8 @@ export function Navigation() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showChat, setShowChat] = useState(false)
+  const [showUserSelector, setShowUserSelector] = useState(false)
+  const [selectedChatUser, setSelectedChatUser] = useState<{id: string, name: string} | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
@@ -56,7 +59,17 @@ export function Navigation() {
   }
 
   const handleOpenChat = () => {
+    setShowUserSelector(true)
+  }
+
+  const handleUserSelect = (userId: string, userName: string) => {
+    setSelectedChatUser({ id: userId, name: userName })
     setShowChat(true)
+  }
+
+  const handleCloseChat = () => {
+    setShowChat(false)
+    setSelectedChatUser(null)
   }
 
   const updateUnreadCount = (count: number) => {
@@ -579,10 +592,20 @@ export function Navigation() {
       )}
       
       {showChat && (
-        <ChatModalWebSocket
+        <ChatModal
           isOpen={showChat}
-          onClose={() => setShowChat(false)}
+          onClose={handleCloseChat}
+          recipientId={selectedChatUser?.id}
+          recipientName={selectedChatUser?.name}
           onUnreadCountUpdate={updateUnreadCount}
+        />
+      )}
+
+      {showUserSelector && (
+        <UserSelector
+          isOpen={showUserSelector}
+          onClose={() => setShowUserSelector(false)}
+          onUserSelect={handleUserSelect}
         />
       )}
     </header>
