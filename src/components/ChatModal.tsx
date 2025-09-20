@@ -301,7 +301,17 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
         return
       }
 
-      console.log('Загружены сообщения:', data)
+      console.log('📥 Загружены сообщения:', {
+        chatId,
+        messageCount: data?.length || 0,
+        messages: data?.map(msg => ({
+          id: msg.id,
+          senderId: msg.sender_id,
+          senderIdType: typeof msg.sender_id,
+          content: msg.content,
+          senderProfile: msg.sender_profile
+        }))
+      })
       setMessages(data || [])
       setLastMessageCount(newMessageCount)
       
@@ -467,7 +477,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       message: messageContent,
       chatId: currentChatId,
       userId: user.id,
-      userEmail: user.email
+      userIdType: typeof user.id,
+      userEmail: user.email,
+      userMetadata: user.user_metadata
     })
 
     try {
@@ -706,9 +718,14 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                   console.log('🔍 Отображение сообщения:', {
                     messageId: message.id,
                     messageSenderId: message.sender_id,
+                    messageSenderIdType: typeof message.sender_id,
                     currentUserId: user?.id,
+                    currentUserIdType: typeof user?.id,
                     isFromCurrentUser: message.sender_id === user?.id,
-                    messageContent: message.content
+                    strictEqual: message.sender_id === user?.id,
+                    looseEqual: message.sender_id == user?.id,
+                    messageContent: message.content,
+                    senderProfile: message.sender_profile
                   })
                   
                   return (
