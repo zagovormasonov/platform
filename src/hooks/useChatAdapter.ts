@@ -1,7 +1,7 @@
 import { useSocketChat } from './useSocketChat'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 
 interface Message {
   id: string
@@ -40,7 +40,6 @@ export function useChatAdapter(): ChatAdapterHook {
   const [supabaseMessages, setSupabaseMessages] = useState<Message[]>([])
   const [supabaseConnected, setSupabaseConnected] = useState(false)
   const [supabaseCurrentChatId, setSupabaseCurrentChatId] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Supabase функции
   const fetchSupabaseMessages = async (chatId: string) => {
