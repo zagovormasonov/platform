@@ -31,6 +31,10 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
           setError(error.message)
         } else {
           setMessage('Проверьте вашу почту для подтверждения регистрации')
+          // Переключаем на режим "Войти" после успешной регистрации
+          setTimeout(() => {
+            onToggleMode()
+          }, 2000) // Переключаем через 2 секунды
         }
       } else {
         const { error } = await signIn(email, password)

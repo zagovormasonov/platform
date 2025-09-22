@@ -257,7 +257,7 @@ export function Navigation() {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <img 
-              src="/logo.png" 
+              src="/logo4.png" 
               alt="Logo" 
               className="h-10 w-10 object-contain"
             />
@@ -332,7 +332,7 @@ export function Navigation() {
                 ) : (
                   <User className="h-4 w-4" />
                 )}
-                <span>Мой профиль</span>
+                <span>{userProfile?.full_name || 'Пользователь'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
               
@@ -396,17 +396,24 @@ export function Navigation() {
                     <Heart className="h-4 w-4" />
                     <span>Понравившиеся</span>
                   </Link>
+                  
+                  {/* Разделитель */}
+                  <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Кнопка Выйти */}
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setShowProfileMenu(false)
+                    }}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Выйти</span>
+                  </button>
                 </div>
               )}
             </div>
-            
-            <button
-              onClick={signOut}
-              className="flex items-center space-x-2 text-white text-opacity-90 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-15"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Выйти</span>
-            </button>
           </div>
 
           {/* Mobile Menu Button */}
