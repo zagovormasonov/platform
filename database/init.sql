@@ -3,15 +3,14 @@
 -- CREATE USER platform_user WITH PASSWORD 'secure_password_123';
 -- GRANT ALL PRIVILEGES ON DATABASE platform_db TO platform_user;
 
--- Подключение к базе данных platform_db
-\c platform_db;
+-- Примечание: Подключение к базе данных должно быть выполнено в клиенте (Adminer, pgAdmin и т.д.)
 
 -- Создание расширений
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Создание таблицы профилей пользователей
 CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255),
@@ -33,7 +32,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- Создание таблицы статей
 CREATE TABLE IF NOT EXISTS articles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(500) NOT NULL,
     content TEXT NOT NULL,
     author_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -46,7 +45,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
 -- Создание таблицы дружбы
 CREATE TABLE IF NOT EXISTS friendships (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     friend_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
@@ -57,7 +56,7 @@ CREATE TABLE IF NOT EXISTS friendships (
 
 -- Создание таблицы уведомлений
 CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL,
     title VARCHAR(255) NOT NULL,
@@ -71,7 +70,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Создание таблицы чатов
 CREATE TABLE IF NOT EXISTS chats (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255),
     type VARCHAR(20) NOT NULL DEFAULT 'private' CHECK (type IN ('private', 'group')),
     created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -82,7 +81,7 @@ CREATE TABLE IF NOT EXISTS chats (
 
 -- Создание таблицы участников чатов
 CREATE TABLE IF NOT EXISTS chat_participants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('member', 'admin', 'owner')),
@@ -93,7 +92,7 @@ CREATE TABLE IF NOT EXISTS chat_participants (
 
 -- Создание таблицы сообщений
 CREATE TABLE IF NOT EXISTS messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
@@ -107,7 +106,7 @@ CREATE TABLE IF NOT EXISTS messages (
 
 -- Создание таблицы прочитанных сообщений
 CREATE TABLE IF NOT EXISTS message_reads (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -116,7 +115,7 @@ CREATE TABLE IF NOT EXISTS message_reads (
 
 -- Создание таблицы категорий экспертов
 CREATE TABLE IF NOT EXISTS categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -125,7 +124,7 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Создание таблицы связей экспертов с категориями
 CREATE TABLE IF NOT EXISTS expert_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -134,7 +133,7 @@ CREATE TABLE IF NOT EXISTS expert_categories (
 
 -- Создание таблицы услуг экспертов
 CREATE TABLE IF NOT EXISTS expert_services (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -147,7 +146,7 @@ CREATE TABLE IF NOT EXISTS expert_services (
 
 -- Создание таблицы расписания экспертов
 CREATE TABLE IF NOT EXISTS expert_schedule (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6), -- 0=воскресенье, 6=суббота
     start_time TIME NOT NULL,
@@ -159,7 +158,7 @@ CREATE TABLE IF NOT EXISTS expert_schedule (
 
 -- Создание таблицы временных слотов
 CREATE TABLE IF NOT EXISTS time_slots (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     schedule_id UUID REFERENCES expert_schedule(id) ON DELETE CASCADE,
     slot_date DATE NOT NULL,
@@ -174,7 +173,7 @@ CREATE TABLE IF NOT EXISTS time_slots (
 
 -- Создание таблицы бронирований
 CREATE TABLE IF NOT EXISTS bookings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     client_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     service_id UUID REFERENCES expert_services(id) ON DELETE SET NULL,
@@ -192,7 +191,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 -- Создание таблицы лайков статей
 CREATE TABLE IF NOT EXISTS article_likes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -201,7 +200,7 @@ CREATE TABLE IF NOT EXISTS article_likes (
 
 -- Создание таблицы избранных статей
 CREATE TABLE IF NOT EXISTS article_favorites (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -210,7 +209,7 @@ CREATE TABLE IF NOT EXISTS article_favorites (
 
 -- Создание таблицы отзывов
 CREATE TABLE IF NOT EXISTS reviews (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     client_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL,
@@ -224,7 +223,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 
 -- Создание таблицы заявок к экспертам
 CREATE TABLE IF NOT EXISTS expert_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     client_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     expert_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
@@ -236,7 +235,7 @@ CREATE TABLE IF NOT EXISTS expert_requests (
 
 -- Создание таблицы аватаров
 CREATE TABLE IF NOT EXISTS avatars (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     file_path TEXT NOT NULL,
     file_size INTEGER,

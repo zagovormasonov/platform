@@ -71,19 +71,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Статические файлы
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Строгий rate limiting для auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 минут
-  max: 5, // максимум 5 попыток входа/регистрации
-  message: 'Слишком много попыток входа, попробуйте позже.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  trustProxy: true,
-  skipSuccessfulRequests: true, // Не считаем успешные запросы
-});
-
 // Маршруты API
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/profile', authenticateToken, profileRoutes);
 app.use('/api/articles', authenticateToken, articleRoutes);
 app.use('/api/friendships', authenticateToken, friendshipRoutes);

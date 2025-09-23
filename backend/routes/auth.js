@@ -2,10 +2,33 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
+import rateLimit from 'express-rate-limit';
 import { query } from '../config/database.js';
 import { generateTokens } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Rate limiting для входа (более строгий)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 10, // максимум 10 попыток входа
+  message: 'Слишком много попыток входа, попробуйте позже.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: true,
+  skipSuccessfulRequests: true,
+});
+
+// Rate limiting для регистрации (более мягкий)
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 50, // максимум 50 попыток регистрации
+  message: 'Слишком много попыток регистрации, попробуйте позже.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: true,
+  skipSuccessfulRequests: true,
+});
 
 // Валидация для регистрации
 const registerValidation = [
@@ -21,7 +44,7 @@ const loginValidation = [
 ];
 
 // Регистрация
-router.post('/register', registerValidation, async (req, res) => {
+router.post('/register', registerLimiter, registerValidation, async (req, res) => {
   try {
     // Проверка ошибок валидации
     const errors = validationResult(req);
@@ -84,7 +107,7 @@ router.post('/register', registerValidation, async (req, res) => {
 });
 
 // Вход
-router.post('/login', loginValidation, async (req, res) => {
+router.post('/login', loginLimiter, loginValidation, async (req, res) => {
   try {
     // Проверка ошибок валидации
     const errors = validationResult(req);
@@ -202,6 +225,17 @@ router.post('/logout', (req, res) => {
   res.json({
     message: 'Успешный выход'
   });
+});
+
+// Сброс rate limit (для разработки)
+router.post('/reset-rate-limit', (req, res) => {
+  // В production это должно быть удалено или защищено
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Недоступно в production' });
+  }
+  
+  // Сбрасываем rate limit для текущего IP
+  res.json({ message: 'Rate limit сброшен для разработки' });
 });
 
 export default router;
