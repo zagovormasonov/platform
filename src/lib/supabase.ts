@@ -3,6 +3,15 @@
 const createEmptyResponse = () => ({ data: [], error: null })
 const createEmptySingleResponse = () => ({ data: null, error: null })
 
+// Создаем заглушку для Promise-подобного объекта
+const createPromiseLike = (response: any) => ({
+  ...response,
+  then: (callback: (result: any) => void) => {
+    callback(response)
+    return Promise.resolve(response)
+  }
+})
+
 export const supabase = {
   auth: {
     getUser: async () => ({ data: { user: null }, error: null }),
@@ -12,23 +21,19 @@ export const supabase = {
   from: (_table: string) => ({
     select: (_columns?: string) => {
       const response = createEmptyResponse()
-      return {
+      return createPromiseLike({
         ...response,
-        eq: (_column: string, _value: any) => response,
-        neq: (_column: string, _value: any) => response,
-        or: (_condition: string) => response,
-        in: (_column: string, _values: any[]) => response,
-        limit: (_count: number) => response,
-        gte: (_column: string, _value: any) => response,
-        not: (_column: string, _operator: string, _value: any) => response,
-        order: (_column: string, _options?: any) => response,
-        single: () => createEmptySingleResponse(),
-        select: () => response,
-        then: (callback: (result: any) => void) => {
-          callback(response)
-          return Promise.resolve(response)
-        }
-      }
+        eq: (_column: string, _value: any) => createPromiseLike(response),
+        neq: (_column: string, _value: any) => createPromiseLike(response),
+        or: (_condition: string) => createPromiseLike(response),
+        in: (_column: string, _values: any[]) => createPromiseLike(response),
+        limit: (_count: number) => createPromiseLike(response),
+        gte: (_column: string, _value: any) => createPromiseLike(response),
+        not: (_column: string, _operator: string, _value: any) => createPromiseLike(response),
+        order: (_column: string, _options?: any) => createPromiseLike(response),
+        single: () => createPromiseLike(createEmptySingleResponse()),
+        select: () => createPromiseLike(response)
+      })
     },
     insert: (_data: any) => ({
       data: [],
