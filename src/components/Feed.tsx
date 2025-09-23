@@ -46,7 +46,6 @@ export function Feed() {
   // Функции для работы с лайками и избранным
   const toggleLike = async (articleId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const article = allArticles.find(a => a.id === articleId)
@@ -84,7 +83,6 @@ export function Feed() {
 
   const toggleFavorite = async (articleId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       const article = allArticles.find(a => a.id === articleId)

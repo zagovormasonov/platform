@@ -108,15 +108,14 @@ export function Navigation() {
       }
 
       try {
-        const { data, error } = await supabase
-          .rpc('get_unread_notifications_count', { p_user_id: user.id })
+        const response = await apiClient.getUnreadCount()
 
-        if (error) {
-          console.error('Ошибка получения количества уведомлений:', error)
+        if (response.error) {
+          console.error('Ошибка получения количества уведомлений:', response.error)
           return
         }
 
-        setUnreadNotificationsCount(data || 0)
+        setUnreadNotificationsCount(response.data?.count || 0)
       } catch (err) {
         console.error('Ошибка подсчета непрочитанных уведомлений:', err)
       }
@@ -133,39 +132,25 @@ export function Navigation() {
 
     const updateNotificationsCount = async () => {
       try {
-        const { data, error } = await supabase
-          .rpc('get_unread_notifications_count', { p_user_id: user.id })
+        const response = await apiClient.getUnreadCount()
 
-        if (error) {
-          console.error('Ошибка получения количества уведомлений:', error)
+        if (response.error) {
+          console.error('Ошибка получения количества уведомлений:', response.error)
           return
         }
 
-        setUnreadNotificationsCount(data || 0)
+        setUnreadNotificationsCount(response.data?.count || 0)
       } catch (err) {
         console.error('Ошибка подсчета непрочитанных уведомлений:', err)
       }
     }
 
-    const channel = supabase
-      .channel('notifications_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          // Обновляем счетчик при любых изменениях в уведомлениях
-          updateNotificationsCount()
-        }
-      )
-      .subscribe()
+    // Пока отключаем realtime подписку, так как используем API
+    // В будущем можно добавить WebSocket или polling
+    const interval = setInterval(updateNotificationsCount, 30000) // Обновляем каждые 30 секунд
 
     return () => {
-      supabase.removeChannel(channel)
+      clearInterval(interval)
     }
   }, [user])
 
