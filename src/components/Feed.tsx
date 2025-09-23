@@ -58,11 +58,11 @@ export function Feed() {
         if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
-        setAllArticles(prev => prev.map(a => 
+        setAllArticles(prev => Array.isArray(prev) ? prev.map(a => 
           a.id === articleId 
             ? { ...a, is_liked: false, likes_count: (a.likes_count || 0) - 1 }
             : a
-        ))
+        ) : [])
       } else {
         // Добавляем лайк
         const response = await apiClient.likeArticle(articleId)
@@ -70,11 +70,11 @@ export function Feed() {
         if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
-        setAllArticles(prev => prev.map(a => 
+        setAllArticles(prev => Array.isArray(prev) ? prev.map(a => 
           a.id === articleId 
             ? { ...a, is_liked: true, likes_count: (a.likes_count || 0) + 1 }
             : a
-        ))
+        ) : [])
       }
     } catch (error) {
       console.error('Ошибка при работе с лайком:', error)
@@ -95,11 +95,11 @@ export function Feed() {
         if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
-        setAllArticles(prev => prev.map(a => 
+        setAllArticles(prev => Array.isArray(prev) ? prev.map(a => 
           a.id === articleId 
             ? { ...a, is_favorited: false }
             : a
-        ))
+        ) : [])
       } else {
         // Добавляем в избранное
         const response = await apiClient.favoriteArticle(articleId)
@@ -107,11 +107,11 @@ export function Feed() {
         if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
-        setAllArticles(prev => prev.map(a => 
+        setAllArticles(prev => Array.isArray(prev) ? prev.map(a => 
           a.id === articleId 
             ? { ...a, is_favorited: true }
             : a
-        ))
+        ) : [])
       }
     } catch (error) {
       console.error('Ошибка при работе с избранным:', error)
@@ -187,11 +187,11 @@ export function Feed() {
       if (user) {
         // Получаем лайки пользователя
         const likesResponse = await apiClient.getMyLikes()
-        userLikes = likesResponse.data?.map((like: any) => like.article_id) || []
+        userLikes = Array.isArray(likesResponse.data) ? likesResponse.data.map((like: any) => like.article_id) : []
 
         // Получаем избранное пользователя
         const favoritesResponse = await apiClient.getMyFavorites()
-        userFavorites = favoritesResponse.data?.map((fav: any) => fav.article_id) || []
+        userFavorites = Array.isArray(favoritesResponse.data) ? favoritesResponse.data.map((fav: any) => fav.article_id) : []
       }
 
       // Приводим данные к правильному типу и добавляем информацию о лайках/избранном
@@ -362,7 +362,7 @@ export function Feed() {
           </div>
         ) : (
             <div className="space-y-6">
-              {displayedArticles.map((article) => {
+              {Array.isArray(displayedArticles) ? displayedArticles.map((article) => {
                 const isExpanded = expandedArticles.has(article.id)
                 
                 if (isExpanded) {
@@ -400,7 +400,7 @@ export function Feed() {
                           {/* Tags */}
                           {article.tags && article.tags.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-4">
-                              {article.tags.slice(0, 5).map((tag, tagIndex) => (
+                              {Array.isArray(article.tags) ? article.tags.slice(0, 5).map((tag, tagIndex) => (
                                 <span
                                   key={tagIndex}
                                   className="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full border border-white border-opacity-30"
@@ -408,7 +408,7 @@ export function Feed() {
                                   <Tag className="h-4 w-4 inline mr-1" />
                                   {tag}
                                 </span>
-                              ))}
+                              )) : []}
                             </div>
                           )}
                         </div>
@@ -469,11 +469,11 @@ export function Feed() {
                 }
                 
                 return null // Обычные карточки рендерим отдельно
-              }).filter(Boolean)}
+              }).filter(Boolean) : []}
               
               {/* Сетка обычных карточек */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayedArticles
+                {Array.isArray(displayedArticles) ? displayedArticles
                   .filter(article => !expandedArticles.has(article.id))
                   .map((article) => {
                     
@@ -506,7 +506,7 @@ export function Feed() {
                           {/* Tags */}
                           {article.tags && article.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
-                              {article.tags.slice(0, 5).map((tag, tagIndex) => (
+                              {Array.isArray(article.tags) ? article.tags.slice(0, 5).map((tag, tagIndex) => (
                                 <span
                                   key={tagIndex}
                                   className="px-2 py-1 bg-white bg-opacity-20 text-white text-xs rounded-full border border-white border-opacity-30"
@@ -514,7 +514,7 @@ export function Feed() {
                                   <Tag className="h-3 w-3 inline mr-1" />
                                   {tag}
                                 </span>
-                              ))}
+                              )) : []}
                             </div>
                           )}
                           
@@ -589,7 +589,7 @@ export function Feed() {
                 </div>
               </article>
                     )
-                  })}
+                  }) : []}
               </div>
             </div>
           )}

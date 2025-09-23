@@ -207,7 +207,7 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="grid gap-6">
-              {articles.map((article) => (
+              {Array.isArray(articles) ? articles.map((article) => (
                 <div key={article.id} className="card">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -259,7 +259,7 @@ export function Dashboard() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : []}
             </div>
           )}
         </div>
