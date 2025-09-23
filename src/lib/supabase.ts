@@ -12,6 +12,13 @@ const createPromiseLike = (response: any) => ({
   }
 })
 
+// Создаем заглушку для объекта с определенными свойствами
+const createMockData = (properties: any) => ({
+  ...properties,
+  data: [properties],
+  error: null
+})
+
 export const supabase = {
   auth: {
     getUser: async () => ({ data: { user: null }, error: null }),
@@ -32,7 +39,11 @@ export const supabase = {
         not: (_column: string, _operator: string, _value: any) => createPromiseLike(response),
         order: (_column: string, _options?: any) => createPromiseLike(response),
         single: () => createPromiseLike(createEmptySingleResponse()),
-        select: () => createPromiseLike(response)
+        select: () => createPromiseLike(response),
+        then: (callback: (result: any) => void) => {
+          callback(response)
+          return Promise.resolve(response)
+        }
       })
     },
     insert: (_data: any) => ({
