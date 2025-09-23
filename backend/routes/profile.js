@@ -68,7 +68,7 @@ router.get('/me', async (req, res) => {
     }
 
     res.json({
-      profile: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {
@@ -98,7 +98,7 @@ router.get('/:id', async (req, res) => {
     }
 
     res.json({
-      profile: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {
@@ -190,7 +190,7 @@ router.put('/me', updateProfileValidation, async (req, res) => {
 
     res.json({
       message: 'Профиль успешно обновлен',
-      profile: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {

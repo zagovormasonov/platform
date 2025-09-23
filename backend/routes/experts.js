@@ -110,7 +110,7 @@ router.get('/:id/services', async (req, res) => {
       SELECT 
         id,
         expert_id,
-        service_name,
+        title as service_name,
         description,
         price,
         duration_minutes,
@@ -118,7 +118,7 @@ router.get('/:id/services', async (req, res) => {
         created_at
       FROM expert_services
       WHERE expert_id = $1 AND is_available = true
-      ORDER BY service_name
+      ORDER BY title
     `;
 
     const result = await query(sql, [id]);
@@ -159,7 +159,7 @@ router.get('/:id/schedule', async (req, res) => {
         is_available,
         duration_minutes,
         created_at
-      FROM expert_time_slots
+      FROM time_slots
       ${whereClause}
       ORDER BY slot_date, start_time
     `;
