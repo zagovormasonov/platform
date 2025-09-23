@@ -54,7 +54,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
   // Обертка для setTimeSlots с логированием
   const setTimeSlots = (slots: TimeSlot[]) => {
     console.log('🔧 setTimeSlots вызван с', slots.length, 'слотами')
-    console.log('📊 Уникальные даты в новых слотах:', [...new Set(slots.map(s => s.slot_date))])
+    console.log('📊 Уникальные даты в новых слотах:', Array.isArray(slots) ? [...new Set(slots.map(s => s.slot_date))] : [])
     setTimeSlotsState(slots)
   }
   const [services, setServices] = useState<Service[]>([])
@@ -99,7 +99,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     console.log('useEffect пересчета вызван:', { timeSlotsLength: timeSlots.length, bookingsLength: bookings.length })
     
     if (timeSlots.length > 0 && bookings.length > 0) {
-      const updatedSlots = timeSlots.map(slot => {
+      const updatedSlots = Array.isArray(timeSlots) ? timeSlots.map(slot => {
         // Проверяем, есть ли активное бронирование для этого слота
         const hasActiveBooking = bookings.some(booking => 
           booking.slot_id === slot.id && 
@@ -111,7 +111,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
           ...slot,
           is_available: !hasActiveBooking
         }
-      })
+      }) : []
       
       console.log('Пересчитанные слоты:', updatedSlots)
       console.log('Недоступных после пересчета:', updatedSlots.filter(s => !s.is_available).length)
@@ -206,7 +206,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       }
 
       // Получаем длительность из расписания
-      const scheduleIds = [...new Set(slotsData.map(slot => slot.schedule_id).filter(Boolean))]
+      const scheduleIds = Array.isArray(slotsData) ? [...new Set(slotsData.map(slot => slot.schedule_id).filter(Boolean))] : []
       let scheduleDurations: Record<string, number> = {}
       
       if (scheduleIds.length > 0) {
@@ -224,7 +224,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       }
       
       // Преобразуем данные в нужный формат
-      const formattedSlots = slotsData.map(slot => ({
+      const formattedSlots = Array.isArray(slotsData) ? slotsData.map(slot => ({
         id: slot.id,
         expert_id: slot.expert_id,
         slot_date: slot.slot_date,
@@ -234,12 +234,12 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
         duration_minutes: (slot.schedule_id && scheduleDurations[slot.schedule_id]) || 60,
         expert_name: expertProfile?.full_name || 'Неизвестно',
         expert_avatar: expertProfile?.avatar_url || null
-      }))
+      })) : []
       
       console.log('✅ Финальные загруженные слоты:', formattedSlots.length)
-      console.log('📅 Уникальные даты в слотах:', [...new Set(formattedSlots.map(s => s.slot_date))])
-      console.log('🔢 Недоступные слоты:', formattedSlots.filter(slot => !slot.is_available).length)
-      console.log('📋 Детали первых 5 слотов:', formattedSlots.slice(0, 5))
+      console.log('📅 Уникальные даты в слотах:', Array.isArray(formattedSlots) ? [...new Set(formattedSlots.map(s => s.slot_date))] : [])
+      console.log('🔢 Недоступные слоты:', Array.isArray(formattedSlots) ? formattedSlots.filter(slot => !slot.is_available).length : 0)
+      console.log('📋 Детали первых 5 слотов:', Array.isArray(formattedSlots) ? formattedSlots.slice(0, 5) : [])
       
       setTimeSlots(formattedSlots)
       
@@ -466,8 +466,8 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
     if (timeSlots.length > 0) {
       console.log(`🔍 getSlotsForDate для ${dateStr}:`, slotsForDate.length, 'из', timeSlots.length, 'общих')
       if (slotsForDate.length === 0) {
-        console.log('📅 Доступные даты в слотах:', [...new Set(timeSlots.map(s => s.slot_date))])
-        console.log('🔍 Первые 3 слота для сравнения:', timeSlots.slice(0, 3).map(s => ({date: s.slot_date, time: s.start_time})))
+        console.log('📅 Доступные даты в слотах:', Array.isArray(timeSlots) ? [...new Set(timeSlots.map(s => s.slot_date))] : [])
+        console.log('🔍 Первые 3 слота для сравнения:', Array.isArray(timeSlots) ? timeSlots.slice(0, 3).map(s => ({date: s.slot_date, time: s.start_time})) : [])
       }
     }
     
@@ -583,7 +583,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
               <div>Бронирований: {bookings.length}</div>
               <div>Диапазон дат: {weekDates[0].toISOString().split('T')[0]} - {weekDates[6].toISOString().split('T')[0]}</div>
               {timeSlots.length > 0 && (
-                <div>Даты слотов: {[...new Set(timeSlots.map(s => s.slot_date))].sort().join(', ')}</div>
+                <div>Даты слотов: {Array.isArray(timeSlots) ? [...new Set(timeSlots.map(s => s.slot_date))].sort().join(', ') : ''}</div>
               )}
             </div>
             <div className="flex space-x-2 mt-2">
@@ -632,7 +632,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                 onClick={() => {
                   console.log('=== ОТЛАДКА РЕНДЕРА ===')
                   console.log('timeSlots state:', timeSlots)
-                  console.log('weekDates:', weekDates.map(d => d.toISOString().split('T')[0]))
+                  console.log('weekDates:', Array.isArray(weekDates) ? weekDates.map(d => d.toISOString().split('T')[0]) : [])
                   weekDates.forEach(date => {
                     const dateStr = date.toISOString().split('T')[0]
                     const slots = getSlotsForDate(date)
@@ -653,7 +653,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
       <div className="p-6">
         <div className="grid grid-cols-7 gap-4">
           {/* Day Headers */}
-          {weekDates.map((date, index) => (
+          {Array.isArray(weekDates) ? weekDates.map((date, index) => (
             <div key={index} className="text-center">
               <div className="font-medium text-gray-700">{getDayName(date)}</div>
               <div className={`text-sm ${
@@ -664,10 +664,10 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                 {formatDate(date)}
               </div>
             </div>
-          ))}
+          )) : []}
 
           {/* Time Slots */}
-          {weekDates.map((date, dayIndex) => {
+          {Array.isArray(weekDates) ? weekDates.map((date, dayIndex) => {
             const dateStr = date.toISOString().split('T')[0]
             const daySlots = getSlotsForDate(date)
             console.log(`📅 Календарная колонка ${dayIndex} (${dateStr}): ${daySlots.length} слотов, режим: ${viewMode}`)
@@ -840,7 +840,7 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
               )}
             </div>
             )
-          })}
+          }) : []}
         </div>
       </div>
 
@@ -892,11 +892,11 @@ export function ExpertCalendar({ expertId, viewMode = 'client' }: ExpertCalendar
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Без привязки к услуге</option>
-                      {services.map(service => (
+                      {Array.isArray(services) ? services.map(service => (
                         <option key={service.id} value={service.id}>
                           {service.service_name} - {service.price}₽
                         </option>
-                      ))}
+                      )) : []}
                     </select>
                   </div>
                 )}

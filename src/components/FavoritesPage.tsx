@@ -85,7 +85,7 @@ export function FavoritesPage() {
       }
 
       // Получаем лайки пользователя для этих статей
-      const articleIds = data?.map(item => (item.articles as any).id) || []
+      const articleIds = Array.isArray(data) ? data.map(item => (item.articles as any).id) : []
       let userLikes: string[] = []
 
       if (articleIds.length > 0) {
@@ -95,11 +95,11 @@ export function FavoritesPage() {
           .eq('user_id', user.id)
           .in('article_id', articleIds)
 
-        userLikes = likesData?.map(like => like.article_id) || []
+        userLikes = Array.isArray(likesData) ? likesData.map(like => like.article_id) : []
       }
 
       // Преобразуем данные
-      const typedData = data?.map(item => {
+      const typedData = Array.isArray(data) ? data.map(item => {
         const article = (item.articles as any)
         return {
           ...article,
@@ -107,7 +107,7 @@ export function FavoritesPage() {
           is_favorited: true, // Все статьи здесь избранные
           profiles: article.profiles as { full_name: string | null; email: string; avatar_url: string | null } | null
         }
-      }) || []
+      }) : []
 
       setArticles(typedData)
     } catch (err) {

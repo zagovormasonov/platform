@@ -95,7 +95,7 @@ export function ChatModalWebSocket({ isOpen, onClose }: ChatModalProps) {
       }
 
       // Обрабатываем данные из Supabase
-      const processedMessages = (messagesData || []).map((message: any) => ({
+      const processedMessages = Array.isArray(messagesData) ? messagesData.map((message: any) => ({
         id: message.id,
         chat_id: message.chat_id,
         sender_id: message.sender_id,
@@ -106,7 +106,7 @@ export function ChatModalWebSocket({ isOpen, onClose }: ChatModalProps) {
         sender_profile: Array.isArray(message.sender_profile) 
           ? message.sender_profile[0] 
           : message.sender_profile
-      }))
+      })) : []
 
       setMessages(processedMessages)
     } catch (error) {
@@ -150,7 +150,7 @@ export function ChatModalWebSocket({ isOpen, onClose }: ChatModalProps) {
       }
 
       // Обрабатываем данные из Supabase
-      const processedChats = (chatsData || []).map((chat: any) => ({
+      const processedChats = Array.isArray(chatsData) ? chatsData.map((chat: any) => ({
         id: chat.id,
         participant_1: chat.participant_1,
         participant_2: chat.participant_2,
@@ -162,7 +162,7 @@ export function ChatModalWebSocket({ isOpen, onClose }: ChatModalProps) {
         participant_2_profile: Array.isArray(chat.participant_2_profile) 
           ? chat.participant_2_profile[0] 
           : chat.participant_2_profile
-      }))
+      })) : []
 
       setChats(processedChats)
     } catch (error) {

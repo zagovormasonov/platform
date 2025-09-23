@@ -85,7 +85,7 @@ export function LikedPage() {
       }
 
       // Получаем избранное пользователя для этих статей
-      const articleIds = data?.map(item => (item.articles as any).id) || []
+      const articleIds = Array.isArray(data) ? data.map(item => (item.articles as any).id) : []
       let userFavorites: string[] = []
 
       if (articleIds.length > 0) {
@@ -95,11 +95,11 @@ export function LikedPage() {
           .eq('user_id', user.id)
           .in('article_id', articleIds)
 
-        userFavorites = favoritesData?.map(fav => fav.article_id) || []
+        userFavorites = Array.isArray(favoritesData) ? favoritesData.map(fav => fav.article_id) : []
       }
 
       // Преобразуем данные
-      const typedData = data?.map(item => {
+      const typedData = Array.isArray(data) ? data.map(item => {
         const article = (item.articles as any)
         return {
           ...article,
@@ -107,7 +107,7 @@ export function LikedPage() {
           is_favorited: userFavorites.includes(article.id),
           profiles: article.profiles as { full_name: string | null; email: string; avatar_url: string | null } | null
         }
-      }) || []
+      }) : []
 
       setArticles(typedData)
     } catch (err) {

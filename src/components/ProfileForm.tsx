@@ -172,7 +172,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
         return
       }
 
-      setSelectedCategories(data?.map(ec => ec.category_id) || [])
+      setSelectedCategories(Array.isArray(data) ? data.map(ec => ec.category_id) : [])
     } catch (err) {
       console.error('Ошибка загрузки категорий эксперта:', err)
     }
