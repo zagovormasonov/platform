@@ -40,6 +40,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [experts, setExperts] = useState<Expert[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedCity, setSelectedCity] = useState('')
