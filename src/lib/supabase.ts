@@ -5,29 +5,41 @@ export const supabase = {
     signOut: async () => ({ error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
   },
-  from: (table: string) => ({
-    select: (columns?: string) => ({
-      eq: (column: string, value: any) => ({
+  from: (_table: string) => ({
+    select: (_columns?: string) => ({
+      eq: (_column: string, _value: any) => ({
         data: [],
         error: null,
         single: () => ({ data: null, error: null }),
-        order: (column: string, options?: any) => ({
+        order: (_column: string, _options?: any) => ({
           data: [],
           error: null
         }),
-        neq: (column: string, value: any) => ({
+        neq: (_column: string, _value: any) => ({
           data: [],
           error: null
         }),
-        or: (condition: string) => ({
+        or: (_condition: string) => ({
           data: [],
           error: null,
-          in: (column: string, values: any[]) => ({
+          in: (_column: string, _values: any[]) => ({
             data: [],
             error: null
           })
         }),
-        in: (column: string, values: any[]) => ({
+        in: (_column: string, _values: any[]) => ({
+          data: [],
+          error: null
+        }),
+        limit: (_count: number) => ({
+          data: [],
+          error: null
+        }),
+        gte: (_column: string, _value: any) => ({
+          data: [],
+          error: null
+        }),
+        not: (_column: string, _operator: string, _value: any) => ({
           data: [],
           error: null
         })
@@ -35,28 +47,40 @@ export const supabase = {
       data: [],
       error: null,
       single: () => ({ data: null, error: null }),
-      order: (column: string, options?: any) => ({
+      order: (_column: string, _options?: any) => ({
         data: [],
         error: null
       }),
-      neq: (column: string, value: any) => ({
+      neq: (_column: string, _value: any) => ({
         data: [],
         error: null
       }),
-      or: (condition: string) => ({
+      or: (_condition: string) => ({
         data: [],
         error: null,
-        in: (column: string, values: any[]) => ({
+        in: (_column: string, _values: any[]) => ({
           data: [],
           error: null
         })
       }),
-      in: (column: string, values: any[]) => ({
+      in: (_column: string, _values: any[]) => ({
+        data: [],
+        error: null
+      }),
+      limit: (_count: number) => ({
+        data: [],
+        error: null
+      }),
+      gte: (_column: string, _value: any) => ({
+        data: [],
+        error: null
+      }),
+      not: (_column: string, _operator: string, _value: any) => ({
         data: [],
         error: null
       })
     }),
-    insert: (data: any) => ({
+    insert: (_data: any) => ({
       data: [],
       error: null,
       select: () => ({
@@ -64,8 +88,8 @@ export const supabase = {
         error: null
       })
     }),
-    update: (data: any) => ({
-      eq: (column: string, value: any) => ({
+    update: (_data: any) => ({
+      eq: (_column: string, _value: any) => ({
         data: [],
         error: null
       }),
@@ -73,7 +97,7 @@ export const supabase = {
       error: null
     }),
     delete: () => ({
-      eq: (column: string, value: any) => ({
+      eq: (_column: string, _value: any) => ({
         data: [],
         error: null
       }),
@@ -82,27 +106,27 @@ export const supabase = {
     })
   }),
   storage: {
-    from: (bucket: string) => ({
-      upload: async (path: string, file: File, options?: any) => ({ 
+    from: (_bucket: string) => ({
+      upload: async (_path: string, _file: File, _options?: any) => ({ 
         data: null, 
         error: null 
       }),
-      getPublicUrl: (path: string) => ({ 
+      getPublicUrl: (_path: string) => ({ 
         data: { publicUrl: '' } 
       })
     })
   },
-  rpc: async (functionName: string, params?: any) => ({ 
+  rpc: async (_functionName: string, _params?: any) => ({ 
     data: null, 
     error: null 
   }),
-  channel: (name: string) => ({
-    on: (event: string, callback: (payload: any) => void) => ({
-      subscribe: (callback?: (status: string) => void) => {}
+  channel: (_name: string) => ({
+    on: (_event: string, _callback: (payload: any) => void) => ({
+      subscribe: (_callback?: (status: string) => void) => {}
     }),
-    subscribe: (callback?: (status: string) => void) => {}
+    subscribe: (_callback?: (status: string) => void) => {}
   }),
-  removeChannel: (channel: any) => {}
+  removeChannel: (_channel: any) => {}
 }
 
 export type Database = {
