@@ -97,9 +97,9 @@ export function Dashboard() {
         return
       }
 
-      setArticles(articles.map(a => 
+      setArticles(Array.isArray(articles) ? articles.map(a => 
         a.id === article.id ? { ...a, published: !a.published } : a
-      ))
+      ) : [])
     } catch (error) {
       console.error('Ошибка обновления статьи:', error)
     }
@@ -107,10 +107,10 @@ export function Dashboard() {
 
   const handleArticleSaved = (article: Article) => {
     if (editingArticle) {
-      setArticles(articles.map(a => a.id === article.id ? article : a))
+      setArticles(Array.isArray(articles) ? articles.map(a => a.id === article.id ? article : a) : [])
       setEditingArticle(null)
     } else {
-      setArticles([article, ...articles])
+      setArticles(Array.isArray(articles) ? [article, ...articles] : [article])
     }
     setShowArticleForm(false)
   }

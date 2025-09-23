@@ -195,12 +195,12 @@ export function Feed() {
       }
 
       // Приводим данные к правильному типу и добавляем информацию о лайках/избранном
-      const typedData = articles.map(article => ({
+      const typedData = Array.isArray(articles) ? articles.map(article => ({
         ...article,
         is_liked: userLikes.includes(article.id),
         is_favorited: userFavorites.includes(article.id),
         profiles: (article.profiles as any) as { full_name: string | null; email: string; avatar_url: string | null } | null
-      }))
+      })) : []
       
       setAllArticles(typedData)
       

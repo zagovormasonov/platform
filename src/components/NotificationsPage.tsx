@@ -79,11 +79,11 @@ export function NotificationsPage() {
       if (error) throw error
 
       // Обновляем локальное состояние
-      setNotifications(prev => prev.map(notification => 
+      setNotifications(prev => Array.isArray(prev) ? prev.map(notification => 
         notificationIds.includes(notification.id)
           ? { ...notification, is_read: true }
           : notification
-      ))
+      ) : [])
     } catch (error) {
       console.error('Ошибка при пометке как прочитанное:', error)
     } finally {
@@ -163,7 +163,7 @@ export function NotificationsPage() {
       showToastNotification(message)
 
       // Обновляем локальное состояние уведомления
-      setNotifications(prev => prev.map(notification => {
+      setNotifications(prev => Array.isArray(prev) ? prev.map(notification => {
         if (notification.data?.booking_id === bookingId) {
           return {
             ...notification,
@@ -174,7 +174,7 @@ export function NotificationsPage() {
           }
         }
         return notification
-      }))
+      }) : [])
 
     } catch (error: any) {
       console.error('Ошибка обновления бронирования:', error)

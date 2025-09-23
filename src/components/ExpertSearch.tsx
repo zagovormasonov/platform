@@ -143,7 +143,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       setExperts(sortedExperts)
       
       // Собираем уникальные города
-      const uniqueCities = [...new Set(experts.map(expert => expert.city).filter(Boolean))]
+      const uniqueCities = Array.isArray(experts) ? [...new Set(experts.map(expert => expert.city).filter(Boolean))] : []
       setCities(uniqueCities as string[])
     } catch (err) {
       console.error('Ошибка загрузки экспертов:', err)
