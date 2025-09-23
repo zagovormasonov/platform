@@ -125,7 +125,7 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
   const renderStars = (rating: number, interactive: boolean = false, onRatingChange?: (rating: number) => void) => {
     return (
       <div className="flex space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {Array.isArray([1, 2, 3, 4, 5]) ? [1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type={interactive ? 'button' : undefined}
@@ -142,7 +142,7 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
               }`}
             />
           </button>
-        ))}
+        )) : []}
       </div>
     )
   }
@@ -205,11 +205,11 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
                     className="input-field"
                   >
                     <option value="">Выберите причину</option>
-                    {requestReasons.map(reason => (
+                    {Array.isArray(requestReasons) ? requestReasons.map(reason => (
                       <option key={reason} value={reason}>
                         {reason.charAt(0).toUpperCase() + reason.slice(1)}
                       </option>
-                    ))}
+                    )) : []}
                   </select>
                 </div>
 
@@ -264,7 +264,7 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
             </div>
           ) : (
             <div className="space-y-6">
-              {reviews.map((review) => (
+              {Array.isArray(reviews) ? reviews.map((review) => (
                 <div key={review.id} className="border rounded-lg p-6">
                   <div className="flex items-start space-x-4">
                     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
@@ -312,7 +312,7 @@ export function Reviews({ expertId, onClose }: ReviewsProps) {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : []}
             </div>
           )}
         </div>

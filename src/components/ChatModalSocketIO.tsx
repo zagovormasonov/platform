@@ -192,9 +192,9 @@ export function ChatModalSocketIO({ isOpen, onClose, recipientId, recipientName,
     setLastViewedTimes(prev => new Map(prev).set(chatId, now))
     
     // Отмечаем сообщения как прочитанные через Socket.IO
-    const unreadMessageIds = socketMessages
+    const unreadMessageIds = Array.isArray(socketMessages) ? socketMessages
       .filter(msg => msg.chatId === chatId && msg.senderId !== user?.id && !msg.isRead)
-      .map(msg => msg.id)
+      .map(msg => msg.id) : []
     
     if (unreadMessageIds.length > 0) {
       markMessagesRead(chatId, unreadMessageIds)
@@ -375,7 +375,7 @@ export function ChatModalSocketIO({ isOpen, onClose, recipientId, recipientName,
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {chats.map((chat) => {
+                      {Array.isArray(chats) ? chats.map((chat) => {
                         const partner = getChatPartner(chat)
                         if (!partner) return null
 
@@ -420,7 +420,7 @@ export function ChatModalSocketIO({ isOpen, onClose, recipientId, recipientName,
                             </div>
                           </div>
                         )
-                      })}
+                      }) : []}
                     </div>
                   )}
                 </div>
@@ -476,7 +476,7 @@ export function ChatModalSocketIO({ isOpen, onClose, recipientId, recipientName,
                   id="messages-container" 
                   className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
                 >
-                  {socketMessages.map((message) => (
+                  {Array.isArray(socketMessages) ? socketMessages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex items-end space-x-2 ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
@@ -503,7 +503,7 @@ export function ChatModalSocketIO({ isOpen, onClose, recipientId, recipientName,
                         </p>
                       </div>
                     </div>
-                  ))}
+                  )) : []}
                   <div ref={messagesEndRef} />
                 </div>
 

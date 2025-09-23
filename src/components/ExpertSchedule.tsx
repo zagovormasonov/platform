@@ -182,9 +182,9 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
 
       if (error) throw error
 
-      setSchedules(schedules.map(s => 
+      setSchedules(Array.isArray(schedules) ? schedules.map(s => 
         s.id === scheduleId ? { ...s, is_active: isActive } : s
-      ))
+      ) : [])
       setMessage(isActive ? 'Расписание активировано' : 'Расписание деактивировано')
 
       // Перегенерируем слоты
@@ -306,11 +306,11 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {DAYS_OF_WEEK.map(day => (
+                {Array.isArray(DAYS_OF_WEEK) ? DAYS_OF_WEEK.map(day => (
                   <option key={day.value} value={day.value}>
                     {day.name}
                   </option>
-                ))}
+                )) : []}
               </select>
             </div>
 
@@ -326,11 +326,11 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {TIME_SLOTS.map(time => (
+                {Array.isArray(TIME_SLOTS) ? TIME_SLOTS.map(time => (
                   <option key={time} value={time}>
                     {time}
                   </option>
-                ))}
+                )) : []}
               </select>
             </div>
 
@@ -346,11 +346,11 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
                 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {TIME_SLOTS.filter(time => time > newSchedule.start_time).map(time => (
+                {Array.isArray(TIME_SLOTS) ? TIME_SLOTS.filter(time => time > newSchedule.start_time).map(time => (
                   <option key={time} value={time}>
                     {time}
                   </option>
-                ))}
+                )) : []}
               </select>
             </div>
 
@@ -419,7 +419,7 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
             )}
           </div>
         ) : (
-          schedules.map(schedule => (
+          Array.isArray(schedules) ? schedules.map(schedule => (
             <div
               key={schedule.id}
               className={`p-4 border rounded-lg ${
@@ -471,7 +471,7 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
                 )}
               </div>
             </div>
-          ))
+          )) : []
         )}
       </div>
     </div>

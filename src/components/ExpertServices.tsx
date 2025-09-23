@@ -330,7 +330,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {services.map((service) => (
+          {Array.isArray(services) ? services.map((service) => (
             <div key={service.id} className="border border-gray-200 rounded-lg p-4">
               {editingService === service.id ? (
                 // Edit Form
@@ -448,7 +448,7 @@ export function ExpertServices({ expertId }: ExpertServicesProps) {
                 </div>
               )}
             </div>
-          ))}
+          )) : []}
         </div>
       )}
     </div>

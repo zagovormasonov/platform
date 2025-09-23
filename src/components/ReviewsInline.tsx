@@ -120,7 +120,7 @@ export function ReviewsInline({ expertId }: ReviewsInlineProps) {
   const renderStars = (currentRating: number, interactive: boolean = false, onChange?: (rating: number) => void) => {
     return (
       <div className="flex space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {Array.isArray([1, 2, 3, 4, 5]) ? [1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
             type={interactive ? 'button' : undefined}
@@ -138,7 +138,7 @@ export function ReviewsInline({ expertId }: ReviewsInlineProps) {
               }`}
             />
           </button>
-        ))}
+        )) : []}
       </div>
     )
   }
@@ -213,11 +213,11 @@ export function ReviewsInline({ expertId }: ReviewsInlineProps) {
                 className="input-field"
               >
                 <option value="">Выберите причину</option>
-                {requestReasons.map((reason) => (
+                {Array.isArray(requestReasons) ? requestReasons.map((reason) => (
                   <option key={reason} value={reason}>
                     {reason}
                   </option>
-                ))}
+                )) : []}
               </select>
             </div>
 
@@ -274,7 +274,7 @@ export function ReviewsInline({ expertId }: ReviewsInlineProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map((review) => (
+          {Array.isArray(reviews) ? reviews.map((review) => (
             <div key={review.id} className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
                 {/* Avatar */}
@@ -325,7 +325,7 @@ export function ReviewsInline({ expertId }: ReviewsInlineProps) {
                 </div>
               </div>
             </div>
-          ))}
+          )) : []}
         </div>
       )}
     </div>

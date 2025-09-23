@@ -332,7 +332,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
           
           {searchResults.length > 0 && (
             <div className="mt-4 space-y-2">
-              {searchResults.map((profile) => (
+              {Array.isArray(searchResults) ? searchResults.map((profile) => (
                 <div key={profile.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -358,7 +358,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                     Посмотреть профиль
                   </button>
                 </div>
-              ))}
+              )) : []}
             </div>
           )}
         </div>
@@ -370,7 +370,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
               Входящие заявки ({pendingRequests.length})
             </h2>
             <div className="space-y-4">
-              {pendingRequests.map((request) => (
+              {Array.isArray(pendingRequests) ? pendingRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -407,7 +407,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : []}
             </div>
           </div>
         )}
@@ -419,7 +419,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
               Исходящие заявки ({sentRequests.length})
             </h2>
             <div className="space-y-4">
-              {sentRequests.map((request) => (
+              {Array.isArray(sentRequests) ? sentRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -450,7 +450,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : []}
             </div>
           </div>
         )}
@@ -473,7 +473,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {friends.map((friend) => (
+              {Array.isArray(friends) ? friends.map((friend) => (
                 <div key={friend.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -508,7 +508,7 @@ export function FriendsPage({ onBack }: FriendsPageProps) {
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : []}
             </div>
           )}
         </div>

@@ -545,9 +545,9 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
       if (data && data[0]) {
         const realMessage = data[0] as Message
         setMessages(prev => 
-          prev.map(msg => 
+          Array.isArray(prev) ? prev.map(msg => 
             msg.id === tempMessage.id ? realMessage : msg
-          )
+          ) : []
         )
       }
       
@@ -636,7 +636,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {chats.map((chat) => {
+                    {Array.isArray(chats) ? chats.map((chat) => {
                       const partner = getChatPartner(chat)
                       if (!partner) return null
 
@@ -678,7 +678,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                           </div>
                         </div>
                       )
-                    })}
+                    }) : []}
                   </div>
                 )}
               </div>
@@ -729,7 +729,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                 className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
                 onScroll={handleScroll}
               >
-                {messages.map((message) => {
+                {Array.isArray(messages) ? messages.map((message) => {
                   const isFromCurrentUser = message.sender_id === user?.id
                   const isFromOtherUser = !isFromCurrentUser
                   
@@ -769,7 +769,7 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
                     </div>
                   </div>
                   )
-                })}
+                }) : []}
                 <div ref={messagesEndRef} />
               </div>
 

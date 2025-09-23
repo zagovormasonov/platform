@@ -268,7 +268,7 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
                   Теги (максимум 5)
                 </label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {tags.map((tag, index) => (
+                  {Array.isArray(tags) ? tags.map((tag, index) => (
                     <span
                       key={index}
                       className="flex items-center space-x-1 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full"
@@ -283,7 +283,7 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
                         <X className="h-3 w-3" />
                       </button>
                     </span>
-                  ))}
+                  )) : []}
                 </div>
                 {tags.length < 5 && (
                   <div className="flex space-x-2">

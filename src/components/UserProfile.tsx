@@ -325,7 +325,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                   <div className="mb-8">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4">Направления деятельности</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {profile.categories.map((cat) => (
+                      {Array.isArray(profile.categories) ? profile.categories.map((cat) => (
                         <div
                           key={cat.category.id}
                           className="bg-purple-50 border border-purple-200 rounded-lg p-3"
@@ -337,7 +337,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                             {cat.category.description}
                           </div>
                         </div>
-                      ))}
+                      )) : []}
                     </div>
                   </div>
                 )}
@@ -359,7 +359,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                   <div className="mb-8">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4">Услуги и цены</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {services.map((service) => (
+                      {Array.isArray(services) ? services.map((service) => (
                         <div
                           key={service.id}
                           className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -387,7 +387,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
                             </span>
                           </div>
                         </div>
-                      ))}
+                      )) : []}
                     </div>
                   </div>
                 )}
