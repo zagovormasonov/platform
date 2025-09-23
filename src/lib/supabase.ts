@@ -1,4 +1,8 @@
 // Заглушка для Supabase - используется PostgreSQL через backend API
+// Возвращает пустые данные, чтобы избежать ошибок TypeScript
+const createEmptyResponse = () => ({ data: [], error: null })
+const createEmptySingleResponse = () => ({ data: null, error: null })
+
 export const supabase = {
   auth: {
     getUser: async () => ({ data: { user: null }, error: null }),
@@ -6,109 +10,34 @@ export const supabase = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
   },
   from: (_table: string) => ({
-    select: (_columns?: string) => ({
-      eq: (_column: string, _value: any) => ({
-        data: [],
-        error: null,
-        single: () => ({ data: null, error: null }),
-        order: (_column: string, _options?: any) => ({
-          data: [],
-          error: null
-        }),
-        neq: (_column: string, _value: any) => ({
-          data: [],
-          error: null
-        }),
-        or: (_condition: string) => ({
-          data: [],
-          error: null,
-          in: (_column: string, _values: any[]) => ({
-            data: [],
-            error: null
-          })
-        }),
-        in: (_column: string, _values: any[]) => ({
-          data: [],
-          error: null
-        }),
-        limit: (_count: number) => ({
-          data: [],
-          error: null
-        }),
-        gte: (_column: string, _value: any) => ({
-          data: [],
-          error: null
-        }),
-        not: (_column: string, _operator: string, _value: any) => ({
-          data: [],
-          error: null
-        }),
-        select: () => ({
-          data: [],
-          error: null
-        })
-      }),
-      data: [],
-      error: null,
-      single: () => ({ data: null, error: null }),
-      order: (_column: string, _options?: any) => ({
-        data: [],
-        error: null
-      }),
-      neq: (_column: string, _value: any) => ({
-        data: [],
-        error: null
-      }),
-      or: (_condition: string) => ({
-        data: [],
-        error: null,
-        in: (_column: string, _values: any[]) => ({
-          data: [],
-          error: null
-        })
-      }),
-      in: (_column: string, _values: any[]) => ({
-        data: [],
-        error: null
-      }),
-      limit: (_count: number) => ({
-        data: [],
-        error: null
-      }),
-      gte: (_column: string, _value: any) => ({
-        data: [],
-        error: null
-      }),
-      not: (_column: string, _operator: string, _value: any) => ({
-        data: [],
-        error: null
-      }),
-      select: () => ({
-        data: [],
-        error: null
-      })
-    }),
+    select: (_columns?: string) => {
+      const response = createEmptyResponse()
+      return {
+        ...response,
+        eq: (_column: string, _value: any) => response,
+        neq: (_column: string, _value: any) => response,
+        or: (_condition: string) => response,
+        in: (_column: string, _values: any[]) => response,
+        limit: (_count: number) => response,
+        gte: (_column: string, _value: any) => response,
+        not: (_column: string, _operator: string, _value: any) => response,
+        order: (_column: string, _options?: any) => response,
+        single: () => createEmptySingleResponse(),
+        select: () => response
+      }
+    },
     insert: (_data: any) => ({
       data: [],
       error: null,
-      select: () => ({
-        data: [],
-        error: null
-      })
+      select: () => createEmptyResponse()
     }),
     update: (_data: any) => ({
-      eq: (_column: string, _value: any) => ({
-        data: [],
-        error: null
-      }),
+      eq: (_column: string, _value: any) => createEmptyResponse(),
       data: [],
       error: null
     }),
     delete: () => ({
-      eq: (_column: string, _value: any) => ({
-        data: [],
-        error: null
-      }),
+      eq: (_column: string, _value: any) => createEmptyResponse(),
       data: [],
       error: null
     })
