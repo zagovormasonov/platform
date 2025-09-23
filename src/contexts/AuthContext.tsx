@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.data?.user) {
         setUser(response.data.user)
+        // Токен уже сохранен в apiClient.register()
       }
 
       return { error: null }
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.data?.user) {
         setUser(response.data.user)
+        // Токен уже сохранен в apiClient.login()
       }
 
       return { error: null }

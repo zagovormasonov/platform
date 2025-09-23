@@ -112,7 +112,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
       // Загружаем экспертов через API
       const response = await apiClient.getExperts({
         city: selectedCity || undefined,
-        category: selectedCategory || undefined,
+        category: selectedCategories.length > 0 ? selectedCategories[0] : undefined,
         limit: 20
       })
 
@@ -154,17 +154,14 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
+      const response = await apiClient.getCategories()
 
-      if (error) {
-        console.error('Ошибка загрузки категорий:', error)
+      if (response.error) {
+        console.error('Ошибка загрузки категорий:', response.error)
         return
       }
 
-      setCategories(data || [])
+      setCategories(response.data || [])
     } catch (err) {
       console.error('Ошибка загрузки категорий:', err)
     }

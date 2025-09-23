@@ -76,7 +76,9 @@ export function Navigation() {
             return
           }
 
-          setUserProfile(response.data)
+          if (response.data) {
+            setUserProfile(response.data)
+          }
         } catch (err) {
           console.error('Ошибка загрузки профиля:', err)
         }

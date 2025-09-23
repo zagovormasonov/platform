@@ -126,10 +126,17 @@ class ApiClient {
     password: string;
     full_name: string;
   }) {
-    return this.request('/auth/register', {
+    const response = await this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+
+    if (response.data) {
+      this.setToken((response.data as any).accessToken);
+      localStorage.setItem('refreshToken', (response.data as any).refreshToken);
+    }
+
+    return response;
   }
 
   async login(credentials: { email: string; password: string }) {
