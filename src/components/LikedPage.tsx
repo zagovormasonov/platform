@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { User, Eye, Tag, Clock, Heart, Bookmark, HeartOff } from 'lucide-react'

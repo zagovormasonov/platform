@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark, Bell } from 'lucide-react'

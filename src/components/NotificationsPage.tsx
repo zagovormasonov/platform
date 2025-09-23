@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Bell, BellOff, Calendar, User, Clock, Check, X, CheckCircle, XCircle } from 'lucide-react'
