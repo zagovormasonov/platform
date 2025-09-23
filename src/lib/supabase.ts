@@ -42,6 +42,10 @@ export const supabase = {
         not: (_column: string, _operator: string, _value: any) => ({
           data: [],
           error: null
+        }),
+        select: () => ({
+          data: [],
+          error: null
         })
       }),
       data: [],
@@ -76,6 +80,10 @@ export const supabase = {
         error: null
       }),
       not: (_column: string, _operator: string, _value: any) => ({
+        data: [],
+        error: null
+      }),
+      select: () => ({
         data: [],
         error: null
       })
