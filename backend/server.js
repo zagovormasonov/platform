@@ -26,6 +26,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy для работы за nginx
+app.set('trust proxy', true);
+
 // Middleware безопасности
 app.use(helmet({
   contentSecurityPolicy: {
