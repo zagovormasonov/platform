@@ -1,13 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Отсутствуют переменные окружения Supabase. Пожалуйста, добавьте VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY в файл .env')
+// Заглушка для Supabase - используется PostgreSQL через backend API
+export const supabase = {
+  auth: {
+    getUser: async () => ({ data: { user: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  },
+  from: () => ({
+    select: () => ({ eq: () => ({ data: [], error: null }) }),
+    insert: () => ({ data: [], error: null }),
+    update: () => ({ eq: () => ({ data: [], error: null }) }),
+    delete: () => ({ eq: () => ({ data: [], error: null }) })
+  }),
+  storage: {
+    from: () => ({
+      upload: async () => ({ data: null, error: null }),
+      getPublicUrl: () => ({ data: { publicUrl: '' } })
+    })
+  },
+  rpc: async () => ({ data: null, error: null }),
+  channel: () => ({
+    on: () => ({ subscribe: () => {} }),
+    subscribe: () => {}
+  }),
+  removeChannel: () => {}
 }
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type Database = {
   public: {
