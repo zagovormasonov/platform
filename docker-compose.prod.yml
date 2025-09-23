@@ -63,8 +63,8 @@ services:
   # Socket.IO сервер
   socketio:
     build:
-      context: .
-      dockerfile: ./socketio/Dockerfile
+      context: ./socketio
+      dockerfile: Dockerfile
     container_name: platform_socketio_prod
     environment:
       NODE_ENV: production
