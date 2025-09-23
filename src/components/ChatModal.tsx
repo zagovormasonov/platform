@@ -510,8 +510,8 @@ export function ChatModal({ isOpen, onClose, recipientId, recipientName, onUnrea
         created_at: new Date().toISOString(),
         sender_profile: {
           id: user.id,
-          full_name: user.user_metadata?.full_name || 'Вы',
-          avatar_url: user.user_metadata?.avatar_url || null
+          full_name: user.full_name || 'Вы',
+          avatar_url: user.avatar_url || null
         }
       }
       

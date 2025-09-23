@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem('accessToken')
     if (token) {
       // Получаем профиль пользователя
-      apiClient.getProfile().then((response) => {
+      apiClient.getProfile().then((response: any) => {
         if (response.data?.profile) {
           setUser(response.data.profile)
         } else {
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      const response = await apiClient.register({
+      const response: any = await apiClient.register({
         email,
         password,
         full_name: fullName
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await apiClient.login({
+      const response: any = await apiClient.login({
         email,
         password
       })

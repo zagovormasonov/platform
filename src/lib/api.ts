@@ -33,7 +33,7 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
-    const headers: HeadersInit = {
+    const headers: any = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
@@ -121,8 +121,8 @@ class ApiClient {
     });
 
     if (response.data) {
-      this.setToken(response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      this.setToken((response.data as any).accessToken);
+      localStorage.setItem('refreshToken', (response.data as any).refreshToken);
     }
 
     return response;

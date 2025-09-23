@@ -26,7 +26,7 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
-        const { error } = await signUp(email, password, fullName, userType)
+        const { error } = await signUp(email, password, fullName)
         if (error) {
           setError(error.message)
         } else {
