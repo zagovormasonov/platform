@@ -1,6 +1,10 @@
 // API клиент для работы с backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+// Отладочная информация
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('VITE_API_URL env:', import.meta.env.VITE_API_URL);
+
 interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -33,6 +37,9 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     
+    console.log('Making API request to:', url);
+    console.log('Request options:', options);
+    
     const headers: any = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -47,6 +54,17 @@ class ApiClient {
         ...options,
         headers,
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      // Проверяем, является ли ответ JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text.substring(0, 200));
+        return { error: 'Сервер вернул не JSON ответ' };
+      }
 
       const data = await response.json();
 
