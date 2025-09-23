@@ -196,11 +196,13 @@ class ApiClient {
     page?: number;
     limit?: number;
     author_id?: string;
+    published?: boolean;
   }) {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.author_id) searchParams.append('author_id', params.author_id);
+    if (params?.published !== undefined) searchParams.append('published', params.published.toString());
 
     const queryString = searchParams.toString();
     const endpoint = `/articles${queryString ? `?${queryString}` : ''}`;

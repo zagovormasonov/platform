@@ -54,13 +54,9 @@ export function Feed() {
 
       if (article.is_liked) {
         // Убираем лайк
-        const { error } = await supabase
-          .from('article_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('article_id', articleId)
+        const response = await apiClient.unlikeArticle(articleId)
 
-        if (error) throw error
+        if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
         setAllArticles(prev => prev.map(a => 
@@ -70,11 +66,9 @@ export function Feed() {
         ))
       } else {
         // Добавляем лайк
-        const { error } = await supabase
-          .from('article_likes')
-          .insert({ user_id: user.id, article_id: articleId })
+        const response = await apiClient.likeArticle(articleId)
 
-        if (error) throw error
+        if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
         setAllArticles(prev => prev.map(a => 
@@ -98,13 +92,9 @@ export function Feed() {
 
       if (article.is_favorited) {
         // Убираем из избранного
-        const { error } = await supabase
-          .from('article_favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('article_id', articleId)
+        const response = await apiClient.unfavoriteArticle(articleId)
 
-        if (error) throw error
+        if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
         setAllArticles(prev => prev.map(a => 
@@ -114,11 +104,9 @@ export function Feed() {
         ))
       } else {
         // Добавляем в избранное
-        const { error } = await supabase
-          .from('article_favorites')
-          .insert({ user_id: user.id, article_id: articleId })
+        const response = await apiClient.favoriteArticle(articleId)
 
-        if (error) throw error
+        if (response.error) throw new Error(response.error)
 
         // Обновляем локальное состояние
         setAllArticles(prev => prev.map(a => 

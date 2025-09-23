@@ -86,57 +86,17 @@ export function Navigation() {
     const fetchUnreadCount = async () => {
       if (user) {
         try {
-          // Получаем все чаты пользователя
-          const { data: chats, error: chatsError } = await supabase
-            .from('chats')
-            .select('id')
-            .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-
-          if (chatsError) {
-            console.error('Ошибка загрузки чатов:', chatsError)
+          // Получаем количество непрочитанных через API
+          const response = await apiClient.getUnreadCount()
+          
+          if (response.error) {
+            console.error('Ошибка загрузки непрочитанных:', response.error)
             return
           }
 
-          if (!chats || chats.length === 0) {
-            setUnreadCount(0)
-            return
-          }
-
-          // Получаем все сообщения от других пользователей во всех чатах
-          const chatIds = chats.map(chat => chat.id)
-          const { data: messages, error: messagesError } = await supabase
-            .from('messages')
-            .select('id, chat_id, created_at')
-            .in('chat_id', chatIds)
-            .neq('sender_id', user.id) // Только сообщения от других пользователей
-
-          if (messagesError) {
-            console.error('Ошибка загрузки сообщений:', messagesError)
-            return
-          }
-
-          // Подсчитываем только непрочитанные сообщения
-          let unreadCount = 0
-          if (messages) {
-            messages.forEach(message => {
-              const lastViewedTime = lastViewedTimes.get(message.chat_id)
-              
-              // Если чат не был просмотрен, считаем сообщение непрочитанным
-              if (!lastViewedTime) {
-                unreadCount++
-                return
-              }
-              
-              // Считаем непрочитанным только если сообщение после последнего просмотра
-              if (new Date(message.created_at) > new Date(lastViewedTime)) {
-                unreadCount++
-              }
-            })
-          }
-
-          setUnreadCount(unreadCount)
+          setUnreadCount(response.data?.count || 0)
         } catch (err) {
-          console.error('Ошибка подсчета непрочитанных сообщений:', err)
+          console.error('Ошибка загрузки непрочитанных:', err)
         }
       }
     }
