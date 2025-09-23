@@ -33,7 +33,28 @@ export const supabase = {
         })
       }),
       data: [],
-      error: null
+      error: null,
+      single: () => ({ data: null, error: null }),
+      order: (column: string, options?: any) => ({
+        data: [],
+        error: null
+      }),
+      neq: (column: string, value: any) => ({
+        data: [],
+        error: null
+      }),
+      or: (condition: string) => ({
+        data: [],
+        error: null,
+        in: (column: string, values: any[]) => ({
+          data: [],
+          error: null
+        })
+      }),
+      in: (column: string, values: any[]) => ({
+        data: [],
+        error: null
+      })
     }),
     insert: (data: any) => ({
       data: [],
