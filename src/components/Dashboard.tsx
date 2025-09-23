@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { Plus, Edit, Trash2, Eye, EyeOff, UserCheck, Users, AlertCircle } from 'lucide-react'
 import { ArticleForm } from './ArticleForm'
 import { PageLayout } from './PageLayout'
@@ -37,18 +37,14 @@ export function Dashboard() {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, user_type, full_name')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Ошибка загрузки профиля:', error)
+      const response = await apiClient.getProfile()
+      
+      if (response.error) {
+        console.error('Ошибка загрузки профиля:', response.error)
         return
       }
 
-      setProfile(data)
+      setProfile(response.data as Profile)
     } catch (error) {
       console.error('Ошибка загрузки профиля:', error)
     }
@@ -58,18 +54,14 @@ export function Dashboard() {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('author_id', user.id)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Ошибка загрузки статей:', error)
+      const response = await apiClient.getMyArticles()
+      
+      if (response.error) {
+        console.error('Ошибка загрузки статей:', response.error)
         return
       }
 
-      setArticles(data || [])
+      setArticles((response.data as Article[]) || [])
     } catch (error) {
       console.error('Ошибка загрузки статей:', error)
     } finally {
@@ -81,13 +73,10 @@ export function Dashboard() {
     if (!confirm('Вы уверены, что хотите удалить эту статью?')) return
 
     try {
-      const { error } = await supabase
-        .from('articles')
-        .delete()
-        .eq('id', articleId)
+      const response = await apiClient.deleteArticle(articleId)
 
-      if (error) {
-        console.error('Ошибка удаления статьи:', error)
+      if (response.error) {
+        console.error('Ошибка удаления статьи:', response.error)
         return
       }
 
@@ -99,13 +88,12 @@ export function Dashboard() {
 
   const handleTogglePublish = async (article: Article) => {
     try {
-      const { error } = await supabase
-        .from('articles')
-        .update({ published: !article.published })
-        .eq('id', article.id)
+      const response = await apiClient.updateArticle(article.id, { 
+        published: !article.published 
+      })
 
-      if (error) {
-        console.error('Ошибка обновления статьи:', error)
+      if (response.error) {
+        console.error('Ошибка обновления статьи:', response.error)
         return
       }
 

@@ -3,14 +3,27 @@
 const createEmptyResponse = () => ({ data: [], error: null })
 const createEmptySingleResponse = () => ({ data: null, error: null })
 
-// Создаем заглушку для Promise-подобного объекта
-const createPromiseLike = (response: any) => ({
-  ...response,
-  then: (callback: (result: any) => void) => {
-    callback(response)
-    return Promise.resolve(response)
+// Создаем заглушку для Promise-подобного объекта с полной цепочкой методов
+const createQueryBuilder = (response: any) => {
+  const builder = {
+    ...response,
+    eq: (_column: string, _value: any) => createQueryBuilder(response),
+    neq: (_column: string, _value: any) => createQueryBuilder(response),
+    or: (_condition: string) => createQueryBuilder(response),
+    in: (_column: string, _values: any[]) => createQueryBuilder(response),
+    limit: (_count: number) => createQueryBuilder(response),
+    gte: (_column: string, _value: any) => createQueryBuilder(response),
+    not: (_column: string, _operator: string, _value: any) => createQueryBuilder(response),
+    order: (_column: string, _options?: any) => createQueryBuilder(response),
+    single: () => createQueryBuilder(createEmptySingleResponse()),
+    select: () => createQueryBuilder(response),
+    then: (callback: (result: any) => void) => {
+      callback(response)
+      return Promise.resolve(response)
+    }
   }
-})
+  return builder
+}
 
 export const supabase = {
   auth: {
@@ -21,23 +34,7 @@ export const supabase = {
   from: (_table: string) => ({
     select: (_columns?: string) => {
       const response = createEmptyResponse()
-      return createPromiseLike({
-        ...response,
-        eq: (_column: string, _value: any) => createPromiseLike(response),
-        neq: (_column: string, _value: any) => createPromiseLike(response),
-        or: (_condition: string) => createPromiseLike(response),
-        in: (_column: string, _values: any[]) => createPromiseLike(response),
-        limit: (_count: number) => createPromiseLike(response),
-        gte: (_column: string, _value: any) => createPromiseLike(response),
-        not: (_column: string, _operator: string, _value: any) => createPromiseLike(response),
-        order: (_column: string, _options?: any) => createPromiseLike(response),
-        single: () => createPromiseLike(createEmptySingleResponse()),
-        select: () => createPromiseLike(response),
-        then: (callback: (result: any) => void) => {
-          callback(response)
-          return Promise.resolve(response)
-        }
-      })
+      return createQueryBuilder(response)
     },
     insert: (_data: any) => ({
       data: [],

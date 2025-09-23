@@ -7,7 +7,7 @@ import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
 import { UserProfile } from './UserProfile'
 import { ChatModal } from './ChatModal'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 
 interface UserProfile {
   id: string
@@ -69,18 +69,14 @@ export function Navigation() {
     const fetchUserProfile = async () => {
       if (user) {
         try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .eq('id', user.id)
-            .single()
-
-          if (error) {
-            console.error('Ошибка загрузки профиля:', error)
+          const response = await apiClient.getProfile()
+          
+          if (response.error) {
+            console.error('Ошибка загрузки профиля:', response.error)
             return
           }
 
-          setUserProfile(data)
+          setUserProfile(response.data)
         } catch (err) {
           console.error('Ошибка загрузки профиля:', err)
         }

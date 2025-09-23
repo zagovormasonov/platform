@@ -296,6 +296,90 @@ class ApiClient {
   async getUnreadCount() {
     return this.request('/notifications/unread-count');
   }
+
+  // Chat endpoints
+  async getChats() {
+    return this.request('/chats');
+  }
+
+  async getChatMessages(chatId: string) {
+    return this.request(`/chats/${chatId}/messages`);
+  }
+
+  async sendMessage(chatId: string, content: string) {
+    return this.request(`/chats/${chatId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async createChat(participantId: string) {
+    return this.request('/chats', {
+      method: 'POST',
+      body: JSON.stringify({ participant_id: participantId }),
+    });
+  }
+
+  // Expert endpoints
+  async getExperts(params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    city?: string;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.city) searchParams.append('city', params.city);
+
+    const queryString = searchParams.toString();
+    const endpoint = `/experts${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  async getExpertProfile(expertId: string) {
+    return this.request(`/experts/${expertId}`);
+  }
+
+  async getExpertServices(expertId: string) {
+    return this.request(`/experts/${expertId}/services`);
+  }
+
+  async getExpertSchedule(expertId: string, startDate?: string, endDate?: string) {
+    const searchParams = new URLSearchParams();
+    if (startDate) searchParams.append('start_date', startDate);
+    if (endDate) searchParams.append('end_date', endDate);
+
+    const queryString = searchParams.toString();
+    const endpoint = `/experts/${expertId}/schedule${queryString ? `?${queryString}` : ''}`;
+    
+    return this.request(endpoint);
+  }
+
+  async createBooking(bookingData: {
+    expert_id: string;
+    service_id: string;
+    slot_id: string;
+    booking_date: string;
+    start_time: string;
+    end_time: string;
+  }) {
+    return this.request('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async getMyBookings() {
+    return this.request('/bookings/my');
+  }
+
+  // Categories endpoints
+  async getCategories() {
+    return this.request('/categories');
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);
