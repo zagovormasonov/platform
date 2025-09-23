@@ -18,7 +18,7 @@ interface Article {
 interface ArticleFormProps {
   article?: Article | null
   onSave: (article: Article) => void
-  onClose: () => void
+  onClose: () => void 
 }
 
 export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
