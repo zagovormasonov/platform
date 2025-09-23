@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { User, Eye, Tag, Clock, TrendingUp, Heart, Bookmark } from 'lucide-react'
 import { useRefresh } from '../contexts/RefreshContext'
 import { UserProfile } from './UserProfile'
@@ -183,37 +183,16 @@ export function Feed() {
       setLoading(true)
       setError('')
 
-      const { data: { user } } = await supabase.auth.getUser()
+      // Загружаем опубликованные статьи
+      const response = await apiClient.getArticles({ published: true })
 
-      // Загружаем ВСЕ опубликованные статьи (без пагинации)
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          id,
-          title,
-          content,
-          author_id,
-          published,
-          created_at,
-          updated_at,
-          image_url,
-          tags,
-          views_count,
-          likes_count,
-          profiles!articles_author_id_fkey (
-            full_name,
-            email,
-            avatar_url
-          )
-        `)
-        .eq('published', true)
-        .order('created_at', { ascending: false }) // По умолчанию сортируем по новизне
-
-      if (error) {
-        console.error('Ошибка загрузки статей:', error)
+      if (response.error) {
+        console.error('Ошибка загрузки статей:', response.error)
         setError('Не удалось загрузить статьи')
         return
       }
+
+      const articles = response.data || []
 
       // Если пользователь авторизован, получаем информацию о его лайках и избранном
       let userLikes: string[] = []
@@ -221,29 +200,21 @@ export function Feed() {
 
       if (user) {
         // Получаем лайки пользователя
-        const { data: likesData } = await supabase
-          .from('article_likes')
-          .select('article_id')
-          .eq('user_id', user.id)
-
-        userLikes = likesData?.map(like => like.article_id) || []
+        const likesResponse = await apiClient.getMyLikes()
+        userLikes = likesResponse.data?.map((like: any) => like.article_id) || []
 
         // Получаем избранное пользователя
-        const { data: favoritesData } = await supabase
-          .from('article_favorites')
-          .select('article_id')
-          .eq('user_id', user.id)
-
-        userFavorites = favoritesData?.map(fav => fav.article_id) || []
+        const favoritesResponse = await apiClient.getMyFavorites()
+        userFavorites = favoritesResponse.data?.map((fav: any) => fav.article_id) || []
       }
 
       // Приводим данные к правильному типу и добавляем информацию о лайках/избранном
-      const typedData = data?.map(article => ({
+      const typedData = articles.map(article => ({
         ...article,
         is_liked: userLikes.includes(article.id),
         is_favorited: userFavorites.includes(article.id),
         profiles: (article.profiles as any) as { full_name: string | null; email: string; avatar_url: string | null } | null
-      })) || []
+      }))
       
       setAllArticles(typedData)
       

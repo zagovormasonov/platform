@@ -380,6 +380,39 @@ class ApiClient {
   async getCategories() {
     return this.request('/categories');
   }
+
+  // Likes and favorites endpoints
+  async getMyLikes() {
+    return this.request('/articles/my-likes');
+  }
+
+  async getMyFavorites() {
+    return this.request('/articles/my-favorites');
+  }
+
+  async likeArticle(articleId: string) {
+    return this.request(`/articles/${articleId}/like`, {
+      method: 'POST',
+    });
+  }
+
+  async unlikeArticle(articleId: string) {
+    return this.request(`/articles/${articleId}/unlike`, {
+      method: 'DELETE',
+    });
+  }
+
+  async favoriteArticle(articleId: string) {
+    return this.request(`/articles/${articleId}/favorite`, {
+      method: 'POST',
+    });
+  }
+
+  async unfavoriteArticle(articleId: string) {
+    return this.request(`/articles/${articleId}/unfavorite`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

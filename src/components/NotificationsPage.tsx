@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { Bell, BellOff, Calendar, User, Clock, Check, X, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { PageLayout } from './PageLayout'
@@ -45,19 +45,15 @@ export function NotificationsPage() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+      const response = await apiClient.getNotifications()
 
-      if (error) {
-        console.error('Ошибка загрузки уведомлений:', error)
+      if (response.error) {
+        console.error('Ошибка загрузки уведомлений:', response.error)
         setError('Не удалось загрузить уведомления')
         return
       }
 
-      setNotifications(data || [])
+      setNotifications(response.data || [])
     } catch (err) {
       console.error('Ошибка загрузки уведомлений:', err)
       setError('Произошла ошибка при загрузке')

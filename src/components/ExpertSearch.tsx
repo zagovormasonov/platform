@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X, Eye, ChevronUp, ChevronDown } from 'lucide-react'
 import { ExpertProfile } from './ExpertProfile'
 
@@ -109,47 +109,41 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
     try {
       setLoading(true)
       
-      // Всегда загружаем всех экспертов с их категориями
-      let query = supabase
-        .from('profiles')
-        .select(`
-          *,
-          categories:expert_categories(
-            category:categories(*)
-          )
-        `)
-        .eq('user_type', 'expert')
-        .not('city', 'is', null)
+      // Загружаем экспертов через API
+      const response = await apiClient.getExperts({
+        city: selectedCity || undefined,
+        category: selectedCategory || undefined,
+        limit: 20
+      })
 
-      // Фильтр по городу
-      if (selectedCity) {
-        query = query.ilike('city', `%${selectedCity}%`)
-      }
-
-      // Сортировка
-      switch (sortBy) {
-        case 'rating':
-          query = query.order('rating', { ascending: false })
-          break
-        case 'newest':
-          query = query.order('created_at', { ascending: false })
-          break
-        case 'requests':
-          query = query.order('total_requests', { ascending: false })
-          break
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Ошибка загрузки экспертов:', error)
+      if (response.error) {
+        console.error('Ошибка загрузки экспертов:', response.error)
+        setError('Не удалось загрузить экспертов')
         return
       }
 
-      setExperts(data || [])
+      const experts = response.data || []
+      
+      // Сортируем экспертов
+      let sortedExperts = [...experts]
+      switch (sortBy) {
+        case 'rating':
+          sortedExperts.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          break
+        case 'newest':
+          sortedExperts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          break
+        case 'requests':
+          sortedExperts.sort((a, b) => (b.total_requests || 0) - (a.total_requests || 0))
+          break
+        default:
+          sortedExperts.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''))
+      }
+
+      setExperts(sortedExperts)
       
       // Собираем уникальные города
-      const uniqueCities = [...new Set(data?.map(expert => expert.city).filter(Boolean))]
+      const uniqueCities = [...new Set(experts.map(expert => expert.city).filter(Boolean))]
       setCities(uniqueCities as string[])
     } catch (err) {
       console.error('Ошибка загрузки экспертов:', err)
