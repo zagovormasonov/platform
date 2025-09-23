@@ -123,7 +123,7 @@ docker-compose -f docker-compose.prod.yml logs --tail=50
 echo "🏥 Проверяем health check..."
 sleep 10
 
-if curl -f http://localhost/api/health > /dev/null 2>&1; then
+if curl -f http://localhost:8080/api/health > /dev/null 2>&1; then
     echo "✅ Health check прошел успешно"
 else
     echo "❌ Health check не прошел"
@@ -135,10 +135,11 @@ fi
 echo ""
 echo "🎉 Деплой завершен успешно!"
 echo "🌐 Приложение доступно по адресу: $CORS_ORIGIN"
+echo "📋 Если порт 80 занят, приложение будет доступно на порту 8080"
 echo "📊 Мониторинг: docker-compose -f docker-compose.prod.yml logs -f"
 echo ""
 echo "📋 Полезные команды:"
 echo "   Статус сервисов: docker-compose -f docker-compose.prod.yml ps"
 echo "   Логи: docker-compose -f docker-compose.prod.yml logs -f"
-echo "   Health check: curl http://localhost/api/health"
+echo "   Health check: curl http://localhost:8080/api/health"
 echo "   Резервная копия: ./scripts/backup.sh"
