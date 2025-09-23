@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: platform_postgres
+    environment:
+      POSTGRES_DB: platform_db
+      POSTGRES_USER: platform_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - platform_network
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: platform_backend
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://platform_user:${POSTGRES_PASSWORD:-secure_password_123}@postgres:5432/platform_db
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_here}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - platform_network
+    restart: unless-stopped
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: platform_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - platform_network
+    restart: unless-stopped
+
+  # Socket.IO сервер
+  socketio:
+    build:
+      context: .
+      dockerfile: ./socketio/Dockerfile
+    container_name: platform_socketio
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "3002:3002"
+    networks:
+      - platform_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  platform_network:
+    driver: bridge
