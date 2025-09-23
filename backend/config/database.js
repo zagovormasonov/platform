@@ -4,9 +4,23 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Отладочная информация
+console.log('Database config:', {
+  user: process.env.POSTGRES_USER || 'platform_user',
+  host: process.env.POSTGRES_HOST || 'localhost',
+  database: process.env.POSTGRES_DB || 'platform_db',
+  password: process.env.POSTGRES_PASSWORD ? '***' : 'NOT SET',
+  port: process.env.POSTGRES_PORT || 5432,
+  nodeEnv: process.env.NODE_ENV
+});
+
 // Создание пула соединений с PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  user: process.env.POSTGRES_USER || 'platform_user',
+  host: process.env.POSTGRES_HOST || 'localhost',
+  database: process.env.POSTGRES_DB || 'platform_db',
+  password: process.env.POSTGRES_PASSWORD,
+  port: process.env.POSTGRES_PORT || 5432,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // максимум соединений в пуле
   idleTimeoutMillis: 30000, // время ожидания перед закрытием неактивного соединения
