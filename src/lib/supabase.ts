@@ -23,7 +23,11 @@ export const supabase = {
         not: (_column: string, _operator: string, _value: any) => response,
         order: (_column: string, _options?: any) => response,
         single: () => createEmptySingleResponse(),
-        select: () => response
+        select: () => response,
+        then: (callback: (result: any) => void) => {
+          callback(response)
+          return Promise.resolve(response)
+        }
       }
     },
     insert: (_data: any) => ({
