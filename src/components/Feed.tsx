@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react'
 import { apiClient } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 import { User, Eye, Tag, Clock, TrendingUp, Heart, Bookmark } from 'lucide-react'
 import { useRefresh } from '../contexts/RefreshContext'
 import { UserProfile } from './UserProfile'
@@ -30,6 +31,7 @@ interface Article {
 type SortOption = 'newest' | 'popular'
 
 export function Feed() {
+  const { user } = useAuth()
   const { refreshTrigger } = useRefresh()
   const [allArticles, setAllArticles] = useState<Article[]>([]) // Все загруженные статьи
   const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]) // Отображаемые статьи
@@ -137,6 +139,10 @@ export function Feed() {
       const sorted = sortArticles(allArticles, sortBy)
       setDisplayedArticles(sorted.slice(0, displayCount))
       setHasMore(displayCount < allArticles.length)
+    } else {
+      // Если статей нет, очищаем отображаемые статьи
+      setDisplayedArticles([])
+      setHasMore(false)
     }
   }, [allArticles, sortBy, displayCount])
 
@@ -178,7 +184,7 @@ export function Feed() {
         return
       }
 
-      const articles = response.data || []
+      const articles = Array.isArray(response.data?.data) ? response.data.data : []
 
       // Если пользователь авторизован, получаем информацию о его лайках и избранном
       let userLikes: string[] = []
@@ -357,12 +363,25 @@ export function Feed() {
               <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-white bg-opacity-20">
                 <Eye className="h-6 w-6 text-white" />
               </div>
-              <h3 className="mt-4 text-lg font-medium text-white">Пока нет опубликованных статей</h3>
+              <h3 className="mt-4 text-lg font-medium text-white">Пока что статей нет</h3>
               <p className="mt-2 text-gray-200">
                 Статьи появятся здесь, как только пользователи начнут публиковать свои материалы
-            </p>
-          </div>
-        ) : (
+              </p>
+              <div className="mt-4 text-sm text-gray-300">
+                <p>Доступны фильтры по:</p>
+                <div className="flex justify-center gap-4 mt-2">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    Новизне
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <TrendingUp className="h-4 w-4" />
+                    Популярности
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
             <div className="space-y-6">
               {Array.isArray(displayedArticles) ? displayedArticles.map((article) => {
                 const isExpanded = expandedArticles.has(article.id)
