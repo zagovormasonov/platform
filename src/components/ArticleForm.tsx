@@ -106,8 +106,8 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
           title,
           content,
           published,
-          image_url: imageUrl || undefined,
-          tags: tags.length > 0 ? tags : undefined
+          ...(imageUrl && { image_url: imageUrl }),
+          ...(tags.length > 0 && { tags })
         })
 
         if (response.error) {
@@ -122,8 +122,8 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
           title,
           content,
           published,
-          image_url: imageUrl || undefined,
-          tags: tags.length > 0 ? tags : undefined
+          ...(imageUrl && { image_url: imageUrl }),
+          ...(tags.length > 0 && { tags })
         })
 
         if (response.error) {

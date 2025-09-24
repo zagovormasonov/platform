@@ -10,7 +10,17 @@ const createArticleValidation = [
   body('title').trim().isLength({ min: 1, max: 500 }).withMessage('Заголовок должен быть от 1 до 500 символов'),
   body('content').trim().isLength({ min: 1 }).withMessage('Содержание статьи не может быть пустым'),
   body('published').optional().isBoolean().withMessage('Поле published должно быть булевым'),
-  body('image_url').optional().isURL().withMessage('Некорректный URL изображения'),
+  body('image_url').optional().custom((value) => {
+    if (value && value.trim() !== '') {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Некорректный URL изображения');
+      }
+    }
+    return true;
+  }),
   body('tags').optional().isArray().withMessage('Теги должны быть массивом')
 ];
 
@@ -19,7 +29,17 @@ const updateArticleValidation = [
   body('title').optional().trim().isLength({ min: 1, max: 500 }).withMessage('Заголовок должен быть от 1 до 500 символов'),
   body('content').optional().trim().isLength({ min: 1 }).withMessage('Содержание статьи не может быть пустым'),
   body('published').optional().isBoolean().withMessage('Поле published должно быть булевым'),
-  body('image_url').optional().isURL().withMessage('Некорректный URL изображения'),
+  body('image_url').optional().custom((value) => {
+    if (value && value.trim() !== '') {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Некорректный URL изображения');
+      }
+    }
+    return true;
+  }),
   body('tags').optional().isArray().withMessage('Теги должны быть массивом')
 ];
 
@@ -44,6 +64,12 @@ router.post('/', authenticateToken, createArticleValidation, async (req, res) =>
 
   } catch (error) {
     console.error('Ошибка создания статьи:', error);
+    console.error('Детали ошибки:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint
+    });
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
