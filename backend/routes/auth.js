@@ -34,7 +34,8 @@ const registerLimiter = rateLimit({
 const registerValidation = [
   body('email').isEmail().normalizeEmail().withMessage('Некорректный email'),
   body('password').isLength({ min: 6 }).withMessage('Пароль должен содержать минимум 6 символов'),
-  body('full_name').trim().isLength({ min: 2 }).withMessage('Имя должно содержать минимум 2 символа')
+  body('full_name').trim().isLength({ min: 2 }).withMessage('Имя должно содержать минимум 2 символа'),
+  body('user_type').optional().isIn(['user', 'expert']).withMessage('Тип пользователя должен быть user или expert')
 ];
 
 // Валидация для входа
@@ -55,7 +56,7 @@ router.post('/register', registerLimiter, registerValidation, async (req, res) =
       });
     }
 
-    const { email, password, full_name } = req.body;
+    const { email, password, full_name, user_type = 'user' } = req.body;
 
     // Проверка существования пользователя
     const existingUser = await query(
@@ -75,10 +76,10 @@ router.post('/register', registerLimiter, registerValidation, async (req, res) =
 
     // Создание пользователя
     const result = await query(
-      `INSERT INTO profiles (id, email, password_hash, full_name, created_at, updated_at) 
-       VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) 
-       RETURNING id, email, full_name, created_at`,
-      [email, hashedPassword, full_name]
+      `INSERT INTO profiles (id, email, password_hash, full_name, user_type, created_at, updated_at) 
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW()) 
+       RETURNING id, email, full_name, user_type, created_at`,
+      [email, hashedPassword, full_name, user_type]
     );
 
     const user = result.rows[0];
@@ -92,6 +93,7 @@ router.post('/register', registerLimiter, registerValidation, async (req, res) =
         id: user.id,
         email: user.email,
         full_name: user.full_name,
+        user_type: user.user_type,
         created_at: user.created_at
       },
       accessToken,
@@ -122,7 +124,7 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
 
     // Поиск пользователя
     const result = await query(
-      'SELECT id, email, password_hash, full_name FROM profiles WHERE email = $1',
+      'SELECT id, email, password_hash, full_name, user_type FROM profiles WHERE email = $1',
       [email]
     );
 
@@ -150,7 +152,8 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        full_name: user.full_name
+        full_name: user.full_name,
+        user_type: user.user_type
       },
       accessToken,
       refreshToken

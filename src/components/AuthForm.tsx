@@ -26,15 +26,15 @@ export function AuthForm({ mode, onToggleMode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
-        const { error } = await signUp(email, password, fullName)
+        const { error } = await signUp(email, password, fullName, userType)
         if (error) {
           setError(error.message)
         } else {
-          setMessage('Проверьте вашу почту для подтверждения регистрации')
-          // Переключаем на режим "Войти" после успешной регистрации
+          setMessage('Регистрация успешна! Перенаправляем...')
+          // Редирект на dashboard после успешной регистрации
           setTimeout(() => {
-            onToggleMode()
-          }, 2000) // Переключаем через 2 секунды
+            window.location.href = '/dashboard'
+          }, 1500)
         }
       } else {
         const { error } = await signIn(email, password)

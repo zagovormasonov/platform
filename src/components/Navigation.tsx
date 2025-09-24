@@ -270,13 +270,13 @@ export function Navigation() {
                 {userProfile?.avatar_url ? (
                   <img
                     src={userProfile.avatar_url}
-                    alt={userProfile.full_name || 'Пользователь'}
+                    alt={user?.full_name || userProfile?.full_name || 'Пользователь'}
                     className="h-6 w-6 rounded-full object-cover"
                   />
                 ) : (
                   <User className="h-4 w-4" />
                 )}
-                <span>{userProfile?.full_name || 'Пользователь'}</span>
+                <span>{user?.full_name || userProfile?.full_name || 'Пользователь'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
               

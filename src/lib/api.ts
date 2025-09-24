@@ -125,6 +125,7 @@ class ApiClient {
     email: string;
     password: string;
     full_name: string;
+    user_type?: string;
   }) {
     const response = await this.request('/auth/register', {
       method: 'POST',
