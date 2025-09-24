@@ -125,7 +125,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
         return
       }
 
-      const experts = response.data || []
+      const experts = Array.isArray(response.data?.data) ? response.data.data : []
       
       // Сортируем экспертов
       let sortedExperts = [...experts]
@@ -164,7 +164,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
         return
       }
 
-      setCategories(response.data || [])
+      setCategories(Array.isArray(response.data?.data) ? response.data.data : [])
     } catch (err) {
       console.error('Ошибка загрузки категорий:', err)
     }
