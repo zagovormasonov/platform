@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { X, Save, Eye, Upload, Tag, Plus, Trash2 } from 'lucide-react'
 
 interface Article {
@@ -62,30 +62,12 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
       setUploading(true)
       setError('')
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`
-
-      const { error } = await supabase.storage
-        .from('articles')
-        .upload(fileName, file)
-
-      if (error) throw error
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('articles')
-        .getPublicUrl(fileName)
-
-      setImageUrl(publicUrl)
-      setError('') // Очищаем ошибку при успешной загрузке
+      // Для простоты, пока что просто показываем сообщение о том, что нужно ввести URL
+      setError('Загрузка изображений временно недоступна. Пожалуйста, введите URL изображения вручную.')
+      
     } catch (error: any) {
       console.error('Ошибка загрузки изображения:', error)
-      if (error.message?.includes('Bucket not found') || error.message?.includes('relation "storage.buckets" does not exist')) {
-        setError('Bucket для изображений не настроен. Выполните SQL-скрипт: supabase-storage-articles.sql в Supabase Dashboard → SQL Editor')
-      } else if (error.message?.includes('violates row-level security policy')) {
-        setError('Нет прав для загрузки изображений. Проверьте настройки Storage в Supabase Dashboard')
-      } else {
-        setError('Не удалось загрузить изображение: ' + error.message)
-      }
+      setError('Не удалось загрузить изображение: ' + error.message)
     } finally {
       setUploading(false)
     }
@@ -120,47 +102,36 @@ export function ArticleForm({ article, onSave, onClose }: ArticleFormProps) {
     try {
       if (article) {
         // Редактирование существующей статьи
-        const { data, error } = await supabase
-          .from('articles')
-          .update({
-            title,
-            content,
-            published,
-            updated_at: new Date().toISOString(),
-            image_url: imageUrl || null,
-            tags: tags.length > 0 ? tags : null
-          })
-          .eq('id', article.id)
-          .select()
-          .single()
+        const response = await apiClient.updateArticle(article.id, {
+          title,
+          content,
+          published,
+          image_url: imageUrl || undefined,
+          tags: tags.length > 0 ? tags : undefined
+        })
 
-        if (error) {
-          setError(error.message)
+        if (response.error) {
+          setError(response.error)
           return
         }
 
-        onSave(data)
+        onSave(response.data)
       } else {
         // Создание новой статьи
-        const { data, error } = await supabase
-          .from('articles')
-          .insert({
-            title,
-            content,
-            author_id: user.id,
-            published,
-            image_url: imageUrl || null,
-            tags: tags.length > 0 ? tags : null
-          })
-          .select()
-          .single()
+        const response = await apiClient.createArticle({
+          title,
+          content,
+          published,
+          image_url: imageUrl || undefined,
+          tags: tags.length > 0 ? tags : undefined
+        })
 
-        if (error) {
-          setError(error.message)
+        if (response.error) {
+          setError(response.error)
           return
         }
 
-        onSave(data)
+        onSave(response.data)
       }
     } catch (err) {
       setError('Произошла неожиданная ошибка')

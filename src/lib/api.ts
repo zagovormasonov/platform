@@ -230,6 +230,8 @@ class ApiClient {
     title: string;
     content: string;
     published?: boolean;
+    image_url?: string;
+    tags?: string[];
   }) {
     return this.request('/articles', {
       method: 'POST',
@@ -241,6 +243,8 @@ class ApiClient {
     title?: string;
     content?: string;
     published?: boolean;
+    image_url?: string;
+    tags?: string[];
   }) {
     return this.request(`/articles/${id}`, {
       method: 'PUT',
