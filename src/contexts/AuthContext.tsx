@@ -5,7 +5,7 @@ interface User {
   id: string
   email: string
   full_name?: string
-  user_type?: string
+  is_expert?: boolean
   avatar_url?: string
   bio?: string
   website_url?: string

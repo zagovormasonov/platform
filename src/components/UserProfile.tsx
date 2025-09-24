@@ -24,7 +24,7 @@ interface Profile {
   twitter_url: string | null
   instagram_url: string | null
   telegram_url: string | null
-  user_type: 'user' | 'expert'
+  is_expert: boolean
   phone: string | null
   city: string | null
   description: string | null
@@ -67,7 +67,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
   }, [userId])
 
   useEffect(() => {
-    if (profile?.user_type === 'expert') {
+    if (profile?.is_expert) {
       fetchServices()
     }
   }, [profile])
@@ -160,7 +160,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
     )
   }
 
-  const isExpert = profile.user_type === 'expert'
+  const isExpert = profile.is_expert
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50">

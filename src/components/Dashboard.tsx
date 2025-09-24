@@ -16,7 +16,7 @@ interface Article {
 
 interface Profile {
   id: string
-  user_type: 'user' | 'expert'
+  is_expert: boolean
   full_name: string | null
 }
 
@@ -44,7 +44,7 @@ export function Dashboard() {
         return
       }
 
-      setProfile(response.data as Profile)
+      setProfile((response as any).data?.data as Profile)
     } catch (error) {
       console.error('Ошибка загрузки профиля:', error)
     }
@@ -143,17 +143,17 @@ export function Dashboard() {
         {profile && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-3">
-              {profile.user_type === 'expert' ? (
+              {profile.is_expert ? (
                 <UserCheck className="h-6 w-6 text-blue-600" />
               ) : (
                 <Users className="h-6 w-6 text-blue-600" />
               )}
               <div>
                 <h3 className="text-lg font-semibold text-blue-900">
-                  {profile.user_type === 'expert' ? 'Эксперт' : 'Пользователь'}
+                  {profile.is_expert ? 'Эксперт' : 'Пользователь'}
                 </h3>
                 <p className="text-sm text-blue-700">
-                  {profile.user_type === 'expert' 
+                  {profile.is_expert 
                     ? 'Вы можете создавать статьи и получать заявки от клиентов'
                     : 'Вы можете искать экспертов и оставлять отзывы'
                   }
@@ -167,7 +167,7 @@ export function Dashboard() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-900">Мои статьи</h2>
-            {profile?.user_type === 'expert' ? (
+            {profile?.is_expert ? (
               <button
                 onClick={() => setShowArticleForm(true)}
                 className="btn-primary flex items-center space-x-2"
@@ -191,12 +191,12 @@ export function Dashboard() {
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">Пока нет статей</h3>
               <p className="mt-2 text-gray-600">
-                {profile?.user_type === 'expert' 
+                {profile?.is_expert 
                   ? 'Создайте свою первую статью, чтобы поделиться духовным опытом'
                   : 'Только эксперты могут создавать статьи. Станьте экспертом, чтобы делиться знаниями!'
                 }
               </p>
-              {profile?.user_type === 'expert' && (
+              {profile?.is_expert && (
                 <button
                   onClick={() => setShowArticleForm(true)}
                   className="mt-4 btn-primary"
@@ -266,7 +266,7 @@ export function Dashboard() {
       </div>
 
       {/* Article Form Modal */}
-      {showArticleForm && profile?.user_type === 'expert' && (
+      {showArticleForm && profile?.is_expert && (
         <ArticleForm
           article={editingArticle}
           onSave={handleArticleSaved}

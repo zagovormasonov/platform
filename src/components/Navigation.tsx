@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark, Bell } from 'lucide-react'
+import { LogOut, Home, Edit3, Users, Search, Eye, ChevronDown, FileText, User, Menu, X, MessageCircle, Heart, Bookmark, Bell, UserCheck } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ProfileForm } from './ProfileForm'
 import { ExpertSearch } from './ExpertSearch'
@@ -250,6 +250,9 @@ export function Navigation() {
                   <User className="h-4 w-4" />
                 )}
                 <span>{user?.full_name || 'Пользователь'}</span>
+                {user?.is_expert && (
+                  <UserCheck className="h-3 w-3 text-blue-400" />
+                )}
                 <ChevronDown className="h-4 w-4" />
               </button>
               

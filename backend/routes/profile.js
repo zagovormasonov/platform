@@ -56,7 +56,8 @@ router.get('/me', async (req, res) => {
   try {
     const result = await query(
       `SELECT id, email, full_name, avatar_url, bio, website_url, github_url, 
-              linkedin_url, twitter_url, instagram_url, telegram_url, created_at, updated_at
+              linkedin_url, twitter_url, instagram_url, telegram_url, is_expert,
+              created_at, updated_at
        FROM profiles WHERE id = $1`,
       [req.user.id]
     );
@@ -86,7 +87,8 @@ router.get('/:id', async (req, res) => {
 
     const result = await query(
       `SELECT id, email, full_name, avatar_url, bio, website_url, github_url, 
-              linkedin_url, twitter_url, instagram_url, telegram_url, created_at, updated_at
+              linkedin_url, twitter_url, instagram_url, telegram_url, is_expert,
+              created_at, updated_at
        FROM profiles WHERE id = $1`,
       [id]
     );

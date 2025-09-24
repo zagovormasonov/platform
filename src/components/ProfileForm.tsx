@@ -20,7 +20,7 @@ interface Profile {
   twitter_url: string | null
   instagram_url: string | null
   telegram_url: string | null
-  user_type: 'user' | 'expert'
+  is_expert: boolean
   phone: string | null
   city: string | null
   description: string | null
@@ -125,7 +125,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       setAcceptsOffline(data.accepts_offline || false)
 
       // Если пользователь эксперт, загружаем его категории
-      if (data.user_type === 'expert') {
+      if (data.is_expert) {
         await fetchExpertCategories(user.id)
       }
     } catch (err) {
@@ -208,7 +208,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
       }
 
       // Если пользователь эксперт, обновляем категории
-      if (profile.user_type === 'expert') {
+      if (profile.is_expert) {
         // Удаляем старые категории
         const { error: deleteError } = await supabase
           .from('expert_categories')
@@ -514,7 +514,7 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
             </div>
 
             {/* Expert-specific fields */}
-            {profile?.user_type === 'expert' && (
+            {profile?.is_expert && (
               <>
                 {/* Description */}
                 <div>
