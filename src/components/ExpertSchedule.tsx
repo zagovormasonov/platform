@@ -256,7 +256,8 @@ export function ExpertSchedule({ expertId }: ExpertScheduleProps) {
   }
 
   // Форматирование времени
-  const formatTime = (time: string) => {
+  const formatTime = (time: string | null | undefined) => {
+    if (!time) return '--:--'
     return time.substring(0, 5)
   }
 

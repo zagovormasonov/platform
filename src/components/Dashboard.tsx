@@ -215,7 +215,7 @@ export function Dashboard() {
                         {article.title}
                       </h3>
                       <p className="text-gray-600 mb-4 line-clamp-3">
-                        {article.content.substring(0, 200)}...
+                        {article.content ? article.content.substring(0, 200) + '...' : 'Содержание недоступно'}
                       </p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span>

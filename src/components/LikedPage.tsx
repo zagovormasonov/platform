@@ -183,7 +183,8 @@ export function LikedPage() {
     return profiles?.full_name || profiles?.email || 'Аноним'
   }
 
-  const getPreviewText = (content: string, isExpanded: boolean) => {
+  const getPreviewText = (content: string | null | undefined, isExpanded: boolean) => {
+    if (!content) return 'Содержание недоступно'
     if (isExpanded) return content
     return content.length > 200 ? content.substring(0, 200) + '...' : content
   }
