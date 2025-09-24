@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { X, User, Mail, MapPin, Phone, Globe, MessageCircle, Star, Users, Calendar, Award } from 'lucide-react'
 import { ReviewsInline } from './ReviewsInline'
@@ -77,24 +77,13 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
       setLoading(true)
       setError('')
       
-      let query = supabase
-        .from('profiles')
-        .select(`
-          *,
-          categories:expert_categories(
-            category:categories(*)
-          )
-        `)
-        .eq('id', userId)
-        .single()
-
-      const { data, error } = await query
-
-      if (error) {
-        throw error
+      const response = await apiClient.getProfile(userId)
+      
+      if (response.error) {
+        throw new Error(response.error)
       }
 
-      setProfile(data)
+      setProfile(response.data as Profile)
     } catch (err: any) {
       console.error('Ошибка загрузки профиля:', err)
       setError('Не удалось загрузить профиль пользователя')
@@ -107,19 +96,14 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
     if (!profile) return
 
     try {
-      const { data, error } = await supabase
-        .from('expert_services')
-        .select('*')
-        .eq('expert_id', profile.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Ошибка загрузки услуг:', error)
+      const response = await apiClient.getExpertServices(profile.id)
+      
+      if (response.error) {
+        console.error('Ошибка загрузки услуг:', response.error)
         return
       }
 
-      setServices(data || [])
+      setServices((response.data as Service[]) || [])
     } catch (err) {
       console.error('Ошибка загрузки услуг:', err)
     }

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react'
 import { apiClient } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 import { Search, MapPin, Star, Users, Phone, Globe, MessageCircle, X, Eye, ChevronUp, ChevronDown } from 'lucide-react'
 import { ExpertProfile } from './ExpertProfile'
 
@@ -37,6 +38,7 @@ interface ExpertSearchProps {
 }
 
 export function ExpertSearch({ onClose }: ExpertSearchProps) {
+  const { user } = useAuth()
   const [experts, setExperts] = useState<Expert[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -223,29 +225,32 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
 
   const handleRequestExpert = async (expertId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         alert('Необходимо войти в систему для отправки заявки')
         return
       }
 
-      const { error } = await supabase
-        .from('expert_requests')
-        .insert({
+      // Отправляем заявку через API
+      const response = await apiClient.request('/api/expert-requests', {
+        method: 'POST',
+        body: JSON.stringify({
           expert_id: expertId,
           client_id: user.id,
           request_reason: requestReason || null,
           message: `Заявка от пользователя ${user.email}`,
           status: 'pending'
         })
+      })
 
-      if (error) {
-        console.error('Ошибка отправки заявки:', error)
+      if (response.error) {
+        console.error('Ошибка отправки заявки:', response.error)
         alert('Не удалось отправить заявку')
         return
       }
 
       alert('Заявка успешно отправлена!')
+      setRequestReason('')
+      setSelectedExpertId(null)
     } catch (err) {
       console.error('Ошибка отправки заявки:', err)
       alert('Произошла ошибка при отправке заявки')

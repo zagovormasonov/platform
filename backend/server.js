@@ -14,6 +14,7 @@ import friendshipRoutes from './routes/friendships.js';
 import notificationRoutes from './routes/notifications.js';
 import expertRoutes from './routes/experts.js';
 import categoryRoutes from './routes/categories.js';
+import expertRequestRoutes from './routes/expertRequests.js';
 
 // Импорт middleware
 import { authenticateToken } from './middleware/auth.js';
@@ -81,6 +82,7 @@ app.use('/api/friendships', authenticateToken, friendshipRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/experts', expertRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/expert-requests', expertRequestRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
