@@ -50,6 +50,7 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const [requestReason, setRequestReason] = useState('')
   const [cities, setCities] = useState<string[]>([])
   const [selectedExpertId, setSelectedExpertId] = useState<string | null>(null)
+  const [categorySearchTerm, setCategorySearchTerm] = useState('')
   const resultsRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -107,6 +108,11 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
   const clearAllCategories = () => {
     setSelectedCategories([])
   }
+
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(categorySearchTerm.toLowerCase()) ||
+    (category.description && category.description.toLowerCase().includes(categorySearchTerm.toLowerCase()))
+  )
 
   const fetchExperts = async () => {
     try {
@@ -321,24 +327,52 @@ export function ExpertSearch({ onClose }: ExpertSearchProps) {
                     </button>
                   )}
                 </div>
-                <div className="max-h-48 overflow-y-auto border rounded-lg p-2 space-y-2">
-                  {categories.map(category => (
-                    <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                
+                {/* Поиск по категориям */}
+                <div className="mb-2">
+                  <input
+                    type="text"
+                    placeholder="Поиск по направлениям..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={categorySearchTerm}
+                    onChange={(e) => setCategorySearchTerm(e.target.value)}
+                  />
+                </div>
+                
+                <div className="max-h-64 overflow-y-auto border rounded-lg p-2 space-y-1">
+                  {filteredCategories.map(category => (
+                    <label key={category.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                       <input
                         type="checkbox"
                         checked={selectedCategories.includes(category.id)}
                         onChange={() => toggleCategory(category.id)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-700">{category.name}</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                        {category.description && (
+                          <p className="text-xs text-gray-500 mt-1">{category.description}</p>
+                        )}
+                      </div>
                     </label>
                   ))}
                 </div>
+                
                 {selectedCategories.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500">
-                      Выбрано: {selectedCategories.length} направлений
+                  <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700 font-medium">
+                      Выбрано направлений: {selectedCategories.length}
                     </p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedCategories.map(categoryId => {
+                        const category = categories.find(c => c.id === categoryId)
+                        return category ? (
+                          <span key={categoryId} className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            {category.name}
+                          </span>
+                        ) : null
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

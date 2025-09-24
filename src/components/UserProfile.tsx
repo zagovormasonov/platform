@@ -83,7 +83,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
         throw new Error(response.error)
       }
 
-      setProfile(response.data as Profile)
+      setProfile((response as any).data?.data as Profile)
     } catch (err: any) {
       console.error('Ошибка загрузки профиля:', err)
       setError('Не удалось загрузить профиль пользователя')
@@ -103,7 +103,7 @@ export function UserProfile({ userId, onClose, onBack }: UserProfileProps) {
         return
       }
 
-      setServices((response.data as Service[]) || [])
+      setServices(((response as any).data?.data as Service[]) || [])
     } catch (err) {
       console.error('Ошибка загрузки услуг:', err)
     }
