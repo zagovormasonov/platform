@@ -280,4 +280,33 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Увеличение количества просмотров статьи
+router.post('/:id/views', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      'UPDATE articles SET views_count = COALESCE(views_count, 0) + 1 WHERE id = $1 RETURNING views_count',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Статья не найдена'
+      });
+    }
+
+    res.json({
+      message: 'Просмотры увеличены',
+      views_count: result.rows[0].views_count
+    });
+
+  } catch (error) {
+    console.error('Ошибка увеличения просмотров:', error);
+    res.status(500).json({
+      error: 'Внутренняя ошибка сервера'
+    });
+  }
+});
+
 export default router;

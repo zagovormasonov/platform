@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRefresh } from '../contexts/RefreshContext'
-import { supabase } from '../lib/supabase'
+import { apiClient } from '../lib/api'
 import { X, Save, User, Mail, FileText, Globe, Github, Linkedin, Twitter, Instagram, MessageCircle, MapPin, Phone, Upload, ChevronDown } from 'lucide-react'
 import { RUSSIAN_CITIES } from '../data/russianCities'
 import { ExpertServices } from './ExpertServices'
@@ -99,18 +99,15 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Ошибка загрузки профиля:', error)
+      const response = await apiClient.getProfile()
+      
+      if (response.error) {
+        console.error('Ошибка загрузки профиля:', response.error)
         setError('Не удалось загрузить профиль')
         return
       }
 
+      const data = response.data
       setProfile(data)
       setFullName(data.full_name || '')
       setBio(data.bio || '')
@@ -141,17 +138,14 @@ export function ProfileForm({ onClose }: ProfileFormProps) {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
-
-      if (error) {
-        console.error('Ошибка загрузки категорий:', error)
+      const response = await apiClient.getCategories()
+      
+      if (response.error) {
+        console.error('Ошибка загрузки категорий:', response.error)
         return
       }
 
-      setCategories(data || [])
+      setCategories(Array.isArray(response.data?.data) ? response.data.data : [])
     } catch (err) {
       console.error('Ошибка загрузки категорий:', err)
     }

@@ -248,7 +248,9 @@ export function Feed() {
 
   const incrementViews = async (articleId: string) => {
     try {
-      await supabase.rpc('increment_article_views', { article_id: articleId })
+      await apiClient.request(`/articles/${articleId}/views`, {
+        method: 'POST'
+      })
     } catch (error) {
       console.error('Ошибка увеличения просмотров:', error)
     }

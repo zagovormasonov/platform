@@ -9,12 +9,6 @@ import { UserProfile } from './UserProfile'
 import { ChatModal } from './ChatModal'
 import { apiClient } from '../lib/api'
 
-interface UserProfile {
-  id: string
-  full_name: string | null
-  avatar_url: string | null
-}
-
 export function Navigation() {
   const { user, signOut } = useAuth()
   const location = useLocation()
@@ -24,7 +18,6 @@ export function Navigation() {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showChat, setShowChat] = useState(false)
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0)
   const [lastViewedTimes, setLastViewedTimes] = useState<Map<string, string>>(new Map())
@@ -64,27 +57,8 @@ export function Navigation() {
     setUnreadCount(count)
   }
 
-  // Загрузка профиля пользователя
+  // Загрузка уведомлений
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (user) {
-        try {
-          const response = await apiClient.getProfile()
-          
-          if (response.error) {
-            console.error('Ошибка загрузки профиля:', response.error)
-            return
-          }
-
-          if (response.data) {
-            setUserProfile(response.data)
-          }
-        } catch (err) {
-          console.error('Ошибка загрузки профиля:', err)
-        }
-      }
-    }
-
     const fetchUnreadCount = async () => {
       if (user) {
         try {
@@ -123,7 +97,6 @@ export function Navigation() {
       }
     }
 
-    fetchUserProfile()
     fetchUnreadCount()
     fetchUnreadNotificationsCount()
   }, [user, lastViewedTimes])
@@ -267,16 +240,16 @@ export function Navigation() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-white text-opacity-90 hover:text-white hover:bg-white hover:bg-opacity-15"
               >
-                {userProfile?.avatar_url ? (
+                {user?.avatar_url ? (
                   <img
-                    src={userProfile.avatar_url}
-                    alt={user?.full_name || userProfile?.full_name || 'Пользователь'}
+                    src={user.avatar_url}
+                    alt={user?.full_name || 'Пользователь'}
                     className="h-6 w-6 rounded-full object-cover"
                   />
                 ) : (
                   <User className="h-4 w-4" />
                 )}
-                <span>{user?.full_name || userProfile?.full_name || 'Пользователь'}</span>
+                <span>{user?.full_name || 'Пользователь'}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>
               
